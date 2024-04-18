@@ -20,6 +20,7 @@ environment:
     /etc/sysconfig
     /etc/systemd
     /etc/zfs
+    /etc/elemental
     /home
     /opt
     /root

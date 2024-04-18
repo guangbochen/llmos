@@ -1,0 +1,16 @@
+[Unit]
+Description=Change default console log level
+DefaultDependencies=no
+Wants=network-online.target
+After=network-online.target
+# Do not run this on live or recovery mode
+ConditionPathExists=!/run/cos/live_mode
+ConditionPathExists=!/run/cos/recovery_mode
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=-/usr/sbin/update-console-loglevel
+
+[Install]
+WantedBy=multi-user.target
