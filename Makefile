@@ -28,7 +28,7 @@ CLI_REPO?=$(REGISTRY)/llmos-cli
 MODELS_REPO=$(REGISTRY)/llmos-models
 
 ## Elemental configs
-ELEMENTAL_TOOLKIT?=ghcr.io/rancher/elemental-toolkit/elemental-cli:v1.1.2
+ELEMENTAL_TOOLKIT?=ghcr.io/rancher/elemental-toolkit/elemental-cli:v2.1.0
 
 ## ollama config
 OLLAMA_VERSION?=0.1.32
@@ -103,7 +103,7 @@ build-models: ## build the ollama models
 build-iso-local: ## build LLMOS ISO locally
 	@echo Building $(ARCH) ISO
 	$(CONTAINER_TOOL) run --rm -v $(DOCKER_SOCK):$(DOCKER_SOCK) -v $(ROOT_DIR)/dist/iso/$(VERSION):/build \
-		-v $(ROOT_DIR)/manifest.yaml:/manifest.yaml \
+		-v $(ROOT_DIR)/iso/manifest.yaml:/manifest.yaml \
 		--entrypoint /usr/bin/elemental $(REPO):$(VERSION)-$(TARGETARCH) --debug build-iso \
 		--local --platform $(PLATFORM) --config-dir . \
 		-n "LLMOS-$(FLAVOR)-$(ARCH)" \

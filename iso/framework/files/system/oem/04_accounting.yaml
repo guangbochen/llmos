@@ -14,16 +14,12 @@ stages:
         passworo: "x"
         gid: 1000
   - name: "Setup users"
-    users:
-      llmos:
-        name: "llmos"
-        passwd: "$6$p9a17i1tn11tnjMX$7rHdnMr8SKC1Onr07PtZ1vw5uall1j0/tMeUleaSnp/BCXZqHb06I.VO45ErhCCR7mXeXvBGZH1vjLtTrf2vZ."
-        groups:
-        - "admin"
-        - "systemd-journal"
-        primary_group: "llmos"
-        shell: /bin/bash
-        homedir: "/home/llmos"
+    ensure_entities:
+    - path: /etc/shadow
+      entity: |
+        kind: "shadow"
+        username: "root"
+        password: "$6$p9a17i1tn11tnjMX$7rHdnMr8SKC1Onr07PtZ1vw5uall1j0/tMeUleaSnp/BCXZqHb06I.VO45ErhCCR7mXeXvBGZH1vjLtTrf2vZ."
   - name: "Setup sudo"
     files:
     - path: "/etc/sudoers"

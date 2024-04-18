@@ -17,17 +17,17 @@ stages:
     # This can be then customized easily by having a cloud-config file which always enables boot assessment on
     # the boot stage.
     - name: "Remove GRUB sentinels"
-      if: '[ -f "/run/cos/active_mode" ]'
+      if: '[ -f "/run/elemental/active_mode" ]'
       commands:
       - |
-          mount -o rw,remount /run/cos/efi
-          grub2-editenv /run/cos/efi/boot_assessment set enable_boot_assessment=
-          grub2-editenv /run/cos/efi/boot_assessment set boot_assessment_tentative=
-          mount -o ro,remount /run/cos/efi
+          mount -o rw,remount /run/elemental/efi
+          grub2-editenv /run/elemental/efi/boot_assessment set enable_boot_assessment=
+          grub2-editenv /run/elemental/efi/boot_assessment set boot_assessment_tentative=
+          mount -o ro,remount /run/elemental/efi
     - name: "Create upgrade failure sentinel if necessary"
       if: cat /proc/cmdline | grep -q "upgrade_failure"
       files:
-      - path: /run/cos/upgrade_failure
+      - path: /run/elemental/upgrade_failure
         content: "1"
         permissions: 0600
         owner: 0
@@ -106,11 +106,11 @@ stages:
     after-upgrade:
     - <<: *efimount
     - name: "Set upgrade sentinel on active"
-      if: '[ ! -f "/run/cos/recovery_mode" ]'
+      if: '[ ! -f "/run/elemental/recovery_mode" ]'
       commands:
       - grub2-editenv /tmp/mnt/EFI/boot_assessment set enable_boot_assessment=yes
     - name: "Set upgrade sentinel on recovery"
-      if: '[ -f "/run/cos/recovery_mode" ]'
+      if: '[ -f "/run/elemental/recovery_mode" ]'
       commands:
       - grub2-editenv /tmp/mnt/EFI/boot_assessment set enable_boot_assessment=yes
     # We do re-install hooks here if needed to track upgrades of boot assessment

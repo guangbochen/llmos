@@ -31,7 +31,7 @@ const (
 	defaultLoginUser       = "llmos"
 	defaultLogFilePath     = "/var/log/llmos-install.log"
 	invalidDeviceNameError = "invalid device name"
-	oemTargetPath          = "/run/cos/oem/"
+	oemTargetPath          = "/run/elemental/oem/"
 )
 
 type configFiles struct {

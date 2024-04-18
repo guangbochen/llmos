@@ -112,7 +112,7 @@ RUN chmod +x /usr/bin/ollama
 
 # Copy the ollama model
 RUN mkdir -p /var/lib/llmos/ollama
-COPY --from=MODELS /dist/models /var/lib/llmos/ollama
+#COPY --from=MODELS /dist/models /var/lib/llmos/ollama
 
 # Enable essential services
 RUN systemctl enable NetworkManager.service
@@ -140,9 +140,6 @@ RUN bash installer.sh agent
 RUN rm -rf installer.sh
 RUN chmod +x /usr/bin/k3s
 
-# Generate initrd with required elemental services
-RUN elemental init immutable-rootfs,grub-config,grub-default-bootargs,elemental-setup,dracut-config --debug --force
-
 # Update os-release file with some metadata
 RUN echo NAME=\"LLMOS-openSUSE Leap\" >> /etc/os-release && \
     echo VERSION=\"${VERSION}\"       >> /etc/os-release && \
@@ -152,6 +149,10 @@ RUN echo NAME=\"LLMOS-openSUSE Leap\" >> /etc/os-release && \
     echo IMAGE=\"${REPO}:${VERSION}\" >> /etc/os-release && \
     echo TIMESTAMP="`date +'%Y%m%d%H%M%S'`" >> /etc/os-release && \
     echo GRUB_ENTRY_NAME=\"LLMOS\" >> /etc/os-release
+
+# Generate initrd with required elemental services
+RUN elemental init elemental-rootfs,elemental-sysroot,grub-config,elemental-setup,dracut-config --debug --force
+
 
 RUN rm /etc/machine-id || true
 RUN rm /var/lib/dbus/machine-id || true
