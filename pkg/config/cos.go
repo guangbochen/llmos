@@ -54,7 +54,8 @@ func ConvertToCos(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
 	username := cfg.OS.Username
 	initramfs.Users[username] = yipSchema.User{
 		PasswordHash: cfg.OS.Password,
-		Groups:       []string{"root"},
+		Groups:       []string{"admin", "systemd-journal"},
+		PrimaryGroup: "llmos",
 		Homedir:      fmt.Sprintf("/home/%s", username),
 	}
 

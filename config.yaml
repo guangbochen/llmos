@@ -48,8 +48,3 @@ os:
     node-external-ip: my-external-node-ip
     disable:
     - servicelb
-llm:
-  start_at_login: true
-  model: gemma-2b
-  https_port: 8080
-

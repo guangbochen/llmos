@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+	elcnst "github.com/rancher/elemental-toolkit/pkg/constants"
 
 	"github.com/llmos-ai/llmos/pkg/config"
 	"github.com/llmos-ai/llmos/pkg/questions"
@@ -31,7 +32,7 @@ const (
 	defaultLoginUser       = "llmos"
 	defaultLogFilePath     = "/var/log/llmos-install.log"
 	invalidDeviceNameError = "invalid device name"
-	oemTargetPath          = "/run/cos/oem/"
+	oemTargetPath          = elcnst.OEMDir
 )
 
 type configFiles struct {
