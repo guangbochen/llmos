@@ -1,41 +1,54 @@
 package cmd
 
 import (
-	"github.com/pterm/pterm"
+	"fmt"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/llmos-ai/llmos/pkg/cli/install"
-	"github.com/llmos-ai/llmos/pkg/config"
-	"github.com/llmos-ai/llmos/pkg/utils"
 )
 
-func newInstallCmd(root *cobra.Command) *cobra.Command {
-	installCfg := &InstallConfig{}
+type InstallOptions struct {
+	Source string `json:"source"`
+	Silent bool   `json:"silent"`
+	Reboot bool   `json:"reboot"`
+	Force  bool   `json:"force"`
+	Url    string `json:"url"`
+}
+
+func newInstallCmd(root *cobra.Command, checkRoot bool) *cobra.Command {
+	opts := &InstallOptions{}
 	c := &cobra.Command{
 		Use:   "install",
 		Short: "Run the LLMOS installation",
 		Args:  cobra.MaximumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if err := utils.ValidateSource(installCfg.Source); err != nil {
+			if err := CheckSource(opts.Source); err != nil {
 				return err
 			}
-			return utils.ValidateRoot()
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := &config.LLMOSConfig{}
-			if err := install.AskInstall(cfg); err != nil {
-				pterm.Error.Printf("Failed to install, error: %s\n", err)
-				return err
+			if checkRoot {
+				return CheckRoot(viper.GetBool("dev"))
 			}
 			return nil
 		},
-	}
-	c.Flags().StringVarP(&installCfg.Source, "source", "s", "", "Source of the LLMOS installation")
-	c.Flags().BoolP("silent", "y", false, "Run the installation in silent mode")
-	c.Flags().BoolP("reboot", "r", true, "Reboot the system after installation")
-	return c
-}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			logger := setupLogger(cmd.Context())
+			newInstall := install.NewInstaller(opts.Source, opts.Reboot, opts.Force, logger)
+			if opts.Silent {
+				if opts.Url == "" {
+					return fmt.Errorf("url is required in silent mode")
+				}
+				return newInstall.RunInstall()
+			}
 
-type InstallConfig struct {
-	Source string `json:"source"`
+			return newInstall.AskInstall()
+		},
+	}
+	c.Flags().StringVarP(&opts.Source, "source", "s", "", "Source of the LLMOS installation")
+	c.Flags().BoolVarP(&opts.Silent, "silent", "q", false, "Run installation in silent mode(without CLI interaction)")
+	c.Flags().BoolVarP(&opts.Reboot, "reboot", "r", false, "Reboot the system after installation")
+	c.Flags().BoolVarP(&opts.Force, "force", "f", false, "Force installation even if the target device is not empty")
+	c.Flags().StringVarP(&opts.Url, "url", "u", "", "URL of the LLMOS installation config")
+	return c
 }

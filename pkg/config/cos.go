@@ -19,6 +19,18 @@ const (
 	K3sManifestPath = "/var/lib/rancher/k3s/server/manifests/"
 )
 
+type Stage string
+
+const (
+	RootfsStage    Stage = "rootfs"
+	InitramfsStage Stage = "initramfs"
+	NetworkStage   Stage = "network"
+)
+
+func (n Stage) String() string {
+	return string(n)
+}
+
 // ConvertToCos converts LLMOSConfig into the cOS configuration
 func ConvertToCos(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
 	cfg, err := cfg.DeepCopy()

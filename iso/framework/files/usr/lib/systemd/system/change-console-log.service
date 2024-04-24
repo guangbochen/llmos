@@ -10,7 +10,7 @@ ConditionPathExists=!/run/cos/recovery_mode
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStart=-/usr/sbin/console_loglevel
+ExecStart=-/usr/sbin/update-console-log-level
 
 [Install]
 WantedBy=multi-user.target

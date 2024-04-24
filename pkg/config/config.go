@@ -9,13 +9,6 @@ import (
 type LLMOSConfig struct {
 	OS      LLMOS   `json:"os,omitempty"`
 	Install Install `json:"install,omitempty"`
-	LLM     LLM     `json:"llm,omitempty"`
-}
-
-type LLM struct {
-	model        string `json:"model,omitempty"`
-	startAtLogin string `json:"startAtLogin,omitempty"`
-	HTTPSPort    int    `json:"httpsPort,omitempty"`
 }
 
 type LLMOS struct {
@@ -48,7 +41,6 @@ type File struct {
 }
 
 type Install struct {
-	//ForceEFI  bool   `json:"forceEfi,omitempty"`
 	Device     string   `json:"device,omitempty"`
 	ConfigURL  string   `json:"configUrl,omitempty"`
 	Silent     bool     `json:"silent,omitempty"`
@@ -60,6 +52,7 @@ type Install struct {
 	DataDevice string   `json:"dataDevice,omitempty"`
 	Env        []string `json:"env,omitempty"`
 	Reboot     bool     `json:"reboot,omitempty"`
+	ConfigDir  string   `json:"configDir,omitempty"`
 }
 
 func NewLLMOSConfig() *LLMOSConfig {
@@ -72,6 +65,14 @@ func (c *LLMOSConfig) DeepCopy() (*LLMOSConfig, error) {
 		return nil, fmt.Errorf("fail to create copy of %T at %p: %s", *c, c, err.Error())
 	}
 	return newConf, nil
+}
+
+func (i *Install) DeepCopy() (*Install, error) {
+	install := &Install{}
+	if err := mergo.Merge(install, i, mergo.WithAppendSlice); err != nil {
+		return nil, fmt.Errorf("fail to create copy of %T at %p: %s", *i, i, err.Error())
+	}
+	return install, nil
 }
 
 func (c *LLMOSConfig) ToCosInstallEnv() ([]string, error) {
@@ -100,16 +101,4 @@ func (c *LLMOSConfig) GetDisabledComponents() []string {
 
 func (c *LLMOSConfig) GetNodeExternalIP() string {
 	return c.OS.ExternalIP
-}
-
-type Stage string
-
-const (
-	RootfsStage    Stage = "rootfs"
-	InitramfsStage Stage = "initramfs"
-	NetworkStage   Stage = "network"
-)
-
-func (n Stage) String() string {
-	return string(n)
 }

@@ -1,19 +1,17 @@
 package install
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 	"os/exec"
-	"strings"
 
-	"github.com/pterm/pterm"
+	"github.com/llmos-ai/llmos/pkg/elemental"
+	"github.com/llmos-ai/llmos/pkg/utils/cmd"
+
 	elcnst "github.com/rancher/elemental-toolkit/pkg/constants"
 
 	"github.com/llmos-ai/llmos/pkg/config"
-	"github.com/llmos-ai/llmos/pkg/questions"
+	"github.com/llmos-ai/llmos/pkg/log"
 	"github.com/llmos-ai/llmos/pkg/utils"
 )
 
@@ -42,78 +40,33 @@ type configFiles struct {
 	llmOSConfigFile     string
 }
 
-func AskInstall(cfg *config.LLMOSConfig) error {
-	if cfg.Install.Silent {
-		return nil
-	}
+type Installer struct {
+	Source string `json:"source"`
+	Reboot bool   `json:"reboot"`
+	Force  bool   `json:"force"`
 
-	pterm.Info.Println("Welcome to the LLMOS installer")
-	rootDisk, err := AskInstallDevice(cfg)
-	if err != nil {
-		if strings.Contains(err.Error(), invalidDeviceNameError) {
-			pterm.Error.Println(err.Error())
-			return AskInstall(cfg)
-		}
-		return err
-	}
-
-	if err = AskConfigURL(cfg); err != nil {
-		return err
-	}
-
-	if err = AskUserConfigs(cfg); err != nil {
-		return err
-	}
-
-	allGood, err := questions.Prompt("Are settings ok?", "n", yesOrNo, true, false)
-	if err != nil {
-		return err
-	}
-
-	if !isYes(allGood) {
-		return AskInstall(cfg)
-	}
-
-	cfs := configFiles{}
-	cosConfig, err := config.ConvertToCos(cfg)
-	if err != nil {
-		return err
-	}
-
-	cfs.cosConfigFile, err = utils.SaveTemp(cosConfig, "cos")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(cfs.cosConfigFile)
-
-	cfs.llmOSConfigFile, err = utils.SaveTemp(cfg, "llmos")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(cfs.llmOSConfigFile)
-
-	cfg.Install.ConfigURL = cfs.cosConfigFile
-
-	// create a tmp config file for installation
-	elementalConfig, err := config.GenerateElementalConfig(cfg, rootDisk)
-	if err != nil {
-		return err
-	}
-
-	cfs.elementalConfigDir, cfs.elementalConfigFile, err = utils.SaveElementalConfig(elementalConfig)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(cfs.elementalConfigFile)
-
-	if err = RunInstall(cfg, cfs); err != nil {
-		return err
-	}
-
-	return nil
+	LLMOSConfig  *config.LLMOSConfig
+	cfs          configFiles
+	runner       cmd.Runner
+	logger       log.Logger
+	elementalCli elemental.Elemental
 }
 
-func RunInstall(cfg *config.LLMOSConfig, cfs configFiles) error {
+func NewInstaller(source string, reboot, force bool, logger log.Logger) *Installer {
+	return &Installer{
+		Source:       source,
+		Reboot:       reboot,
+		Force:        force,
+		LLMOSConfig:  config.NewLLMOSConfig(),
+		runner:       cmd.NewRunner(),
+		logger:       logger,
+		elementalCli: elemental.NewElemental(),
+	}
+}
+
+func (i *Installer) RunInstall() error {
+	cfg := i.LLMOSConfig
+	//cfs := i.cfs
 	utils.SetEnv(cfg.OS.Env)
 	utils.SetEnv(cfg.Install.Env)
 
@@ -121,57 +74,65 @@ func RunInstall(cfg *config.LLMOSConfig, cfs configFiles) error {
 		cfg.Install.Device = detectInstallationDevice()
 	}
 
-	if err := runInstall(cfg, cfs); err != nil {
+	if cfg.Install.Device == "" {
+		return fmt.Errorf("no device found to install LLMOS")
+	}
+
+	if err := i.runInstall(); err != nil {
 		return err
 	}
 
 	// copy template file to the /oem config directory
 	// Note: don't use yaml file extension for the config files as it will be applied again
-	if err := utils.CopyFile(cfs.llmOSConfigFile, oemTargetPath+"llmos.config"); err != nil {
+	if err := utils.CopyFile(i.cfs.llmOSConfigFile, oemTargetPath+"/llmos.config"); err != nil {
 		return err
 	}
 
-	if err := utils.CopyFile(cfs.elementalConfigFile, oemTargetPath+"elemental.config"); err != nil {
+	if err := utils.CopyFile(i.cfs.elementalConfigFile, oemTargetPath+"/elemental.config"); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func runInstall(cfg *config.LLMOSConfig, cfs configFiles) error {
-	slog.Info("Running install")
-	if err := Sanitize(cfg.Install); err != nil {
+func (i *Installer) runInstall() error {
+	i.logger.Info("Running install")
+	if err := Sanitize(i.LLMOSConfig.Install); err != nil {
 		return err
 	}
 
-	if err := DeactivateDevices(); err != nil {
+	if err := i.DeactivateDevices(); err != nil {
+		return err
+	}
+
+	if err := i.elementalCli.Install(i.LLMOSConfig.Install); err != nil {
 		return err
 	}
 
 	// run the elemental install
-	args := []string{
-		"install", "--config-dir", cfs.elementalConfigDir,
-		"--debug",
-	}
-	cmd := exec.Command("elemental", args...)
-	var stdBuffer bytes.Buffer
-	mw := io.MultiWriter(os.Stdout, &stdBuffer)
+	//args := []string{
+	//	"install", "--config-dir", cfs.elementalConfigDir,
+	//	"--debug",
+	//}
+	//cmd := exec.Command("elemental", args...)
+	//var stdBuffer bytes.Buffer
+	//mw := io.MultiWriter(os.Stdout, &stdBuffer)
+	//
+	//cmd.Stdout = mw
+	//cmd.Stderr = mw
+	//
+	//// Execute the command
+	//if err := cmd.Run(); err != nil {
+	//	return fmt.Errorf("elemental install failed: %s", err)
+	//}
+	//slog.Info(stdBuffer.String())
 
-	cmd.Stdout = mw
-	cmd.Stderr = mw
-
-	// Execute the command
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("elemental install failed: %s", err)
-	}
-	slog.Info(stdBuffer.String())
-
-	pterm.Info.Println("Installation complete")
+	i.logger.Info("Installation complete")
 	return nil
 }
 
 // DeactivateDevices helps to tear down LVM and MD devices on the system, if the installing device is occupied, the partitioning operation could fail later.
-func DeactivateDevices() error {
+func (i *Installer) DeactivateDevices() error {
 	slog.Info("Deactivating LVM and MD devices")
 	cmd := exec.Command("blkdeactivate", "--lvmoptions", "wholevg,retry",
 		"--dmoptions", "force,retry", "--errors")

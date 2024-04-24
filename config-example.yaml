@@ -1,7 +1,8 @@
 # Example of LLMOS config
 install:
   device: /dev/sda
-  iso_url: http://my-server/llmos.iso
+  data_device: /dev/sdb
+  iso_url: http://my-server/llmos-leap.iso
   reboot: true
   poweroff: false
   debug: true

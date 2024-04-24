@@ -1,4 +1,4 @@
-if: '[ ! -f "/run/elemental/recovery_mode" ]'
+if: '[ ! -f "/run/cos/recovery_mode" ]'
 name: "Rootfs Layout overwrite"
 environment_file: /run/cos/cos-layout.env
 environment:
@@ -20,6 +20,7 @@ environment:
     /etc/sysconfig
     /etc/systemd
     /etc/zfs
+    /etc/elemental
     /home
     /opt
     /root

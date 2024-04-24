@@ -2,15 +2,18 @@ package utils
 
 import (
 	"fmt"
+	"log/slog"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
+	"time"
 
-	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 
 	"github.com/llmos-ai/llmos/pkg/config"
+	"github.com/llmos-ai/llmos/pkg/log"
 )
 
 const (
@@ -18,31 +21,7 @@ const (
 	elementalConfigFile = "config.yaml"
 )
 
-func ValidateSource(source string) error {
-	if source == "" {
-		return nil
-	}
-
-	r, err := regexp.Compile(`^oci:|dir:|file:`)
-	if err != nil {
-		return err
-	}
-	if !r.MatchString(source) {
-		return fmt.Errorf("source must be one of oci:|dir:|file:, current source: %s", source)
-	}
-
-	return nil
-}
-
-func ValidateRoot() error {
-	if os.Geteuid() != 0 {
-		return fmt.Errorf("root privileges is required to run this command. Please run with sudo or as root user")
-	}
-
-	return nil
-}
-
-func SaveTemp(obj interface{}, prefix string) (string, error) {
+func SaveTemp(obj interface{}, prefix string, logger log.Logger) (string, error) {
 	tempFile, err := os.CreateTemp("/tmp", fmt.Sprintf("%s.", prefix))
 	if err != nil {
 		return "", err
@@ -59,12 +38,15 @@ func SaveTemp(obj interface{}, prefix string) (string, error) {
 		return "", err
 	}
 
-	pterm.Info.Printf("Saved template file successfully at: %s \n%v\n", tempFile.Name(), string(bytes))
+	logger.Info("Saved file successfully", "fileName", tempFile.Name())
+	if logger.IsDebug() {
+		fmt.Printf("config file:\n%v\n", string(bytes))
+	}
 
 	return tempFile.Name(), nil
 }
 
-func SaveElementalConfig(elemental *config.ElementalConfig) (string, string, error) {
+func SaveElementalConfig(elemental *config.ElementalConfig, logger log.Logger) (string, string, error) {
 	err := os.MkdirAll(elementalConfigDir, os.ModePerm)
 	if err != nil {
 		return "", "", err
@@ -81,7 +63,10 @@ func SaveElementalConfig(elemental *config.ElementalConfig) (string, string, err
 		return "", "", err
 	}
 
-	pterm.Info.Printf("Saved elemental config file successfully at: %s \n%v\n", file, string(bytes))
+	logger.Info("Saved elemental config file successfully", "fileName", file)
+	if logger.IsDebug() {
+		fmt.Printf("config file:\n%v\n", string(bytes))
+	}
 
 	return elementalConfigDir, file, nil
 }
@@ -102,4 +87,50 @@ func SetEnv(env []string) {
 			os.Setenv(pair[0], pair[1])
 		}
 	}
+}
+
+func IsRunningInContainer() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+
+	if env := os.Getenv("KUBERNETES_SERVICE_HOST"); env != "" {
+		return true
+	}
+	return false
+}
+
+func IsValidPathOrURL(path string) error {
+	var err error
+
+	// check if is valid path
+	if _, err = os.Stat(path); err == nil {
+		return nil
+	}
+
+	// check if source is a valid url
+	if strings.Contains(path, "http") {
+		url, err := url.Parse(path)
+		if err != nil {
+			slog.Debug("invalid source url: %s", path)
+			return err
+		}
+
+		client := http.Client{
+			Timeout: 1 * time.Second,
+		}
+		resp, err := client.Get(url.String())
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		// Check if the HTTP response is a success (2xx) or success-like code (3xx)
+		if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusBadRequest {
+			return nil
+		}
+		return fmt.Errorf("url response status code is invalid: %d", resp.StatusCode)
+	}
+
+	return err
 }

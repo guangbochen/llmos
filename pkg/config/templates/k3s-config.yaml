@@ -5,7 +5,6 @@ node-external-ip: {{ .GetNodeExternalIP }}
 write-kubeconfig-mode: "0644"
 {{- with $labels :=  .GetNodeLabels }}
 node-label:
-- "llmos.ai/managed=true"
 {{- range $label := $labels }}
 - {{ printf "%q" $label }}
 {{- end }}
