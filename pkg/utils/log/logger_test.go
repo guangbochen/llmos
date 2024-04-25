@@ -5,9 +5,10 @@ import (
 	"log/slog"
 	"reflect"
 
-	"github.com/llmos-ai/llmos/pkg/utils/log"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/llmos-ai/llmos/pkg/utils/log"
 )
 
 var _ = Describe("logger", Label("log", "logger"), func() {
