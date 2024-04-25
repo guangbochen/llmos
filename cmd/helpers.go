@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/llmos-ai/llmos/pkg/constants"
-	"github.com/llmos-ai/llmos/pkg/log"
+	"github.com/llmos-ai/llmos/pkg/utils/log"
 )
 
 // CheckRoot helps to check if the user is root
@@ -46,7 +46,7 @@ func CheckSource(source string) error {
 func checkIsLiveMode() bool {
 	dat, err := os.ReadFile(constants.CosLiveModeFile)
 	if err != nil {
-		slog.Debug("Error reading live_mode file", err.Error())
+		slog.Debug("Error reading live_mode file", "error", err.Error())
 		return false
 	}
 
@@ -54,9 +54,5 @@ func checkIsLiveMode() bool {
 }
 
 func setupLogger(ctx context.Context) log.Logger {
-	logger := log.NewLogger(ctx)
-	if viper.GetBool("debug") {
-		logger.SetDebugLevel()
-	}
-	return logger
+	return log.NewLogger(ctx, viper.GetBool("debug"))
 }

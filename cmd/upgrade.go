@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/spf13/viper"
 	"log/slog"
+
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 
@@ -10,7 +11,6 @@ import (
 )
 
 func newUpgradeCmd(root *cobra.Command, checkRoot bool) *cobra.Command {
-	//cfg := types.NewConfig()
 	u := upgrade.NewUpgrade()
 	c := &cobra.Command{
 		Use:   "upgrade",

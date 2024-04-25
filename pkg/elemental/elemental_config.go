@@ -1,4 +1,4 @@
-package config
+package elemental
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"github.com/jaypipes/ghw"
 	elconst "github.com/rancher/elemental-toolkit/pkg/constants"
 
+	"github.com/llmos-ai/llmos/pkg/config"
 	"github.com/llmos-ai/llmos/pkg/constants"
 )
 
@@ -18,58 +19,68 @@ const (
 )
 
 type ElementalConfig struct {
-	Install  ElementalInstallSpec `yaml:"install,omitempty"`
-	Reboot   bool                 `yaml:"reboot,omitempty"`
-	Poweroff bool                 `yaml:"poweroff,omitempty"`
+	Install  InstallSpec `yaml:"install,omitempty"`
+	Reboot   bool        `yaml:"reboot,omitempty"`
+	Poweroff bool        `yaml:"poweroff,omitempty"`
 }
 
-type ElementalInstallSpec struct {
-	Target          string                     `yaml:"target,omitempty"`
-	Partitions      *ElementalDefaultPartition `yaml:"partitions,omitempty"`
-	ExtraPartitions []ElementalPartition       `yaml:"extra-partitions,omitempty"`
-	CloudInit       string                     `yaml:"cloud-init,omitempty"`
-	System          *ElementalSystem           `yaml:"system,omitempty"`
-	TTY             string                     `yaml:"tty,omitempty"`
+type InstallSpec struct {
+	Target          string            `yaml:"target,omitempty"`
+	Partitions      *DefaultPartition `yaml:"partitions,omitempty"`
+	ExtraPartitions []Partition       `yaml:"extra-partitions,omitempty"`
+	ISO             string            `yaml:"iso,omitempty"`
+	CloudInit       string            `yaml:"cloud-init,omitempty"`
+	System          string            `yaml:"system,omitempty"`
+	TTY             string            `yaml:"tty,omitempty"`
 }
 
-type ElementalSystem struct {
-	Label string `yaml:"label,omitempty"`
-	Size  uint   `yaml:"size,omitempty"`
-	FS    string `yaml:"fs,omitempty"`
-	URI   string `yaml:"uri,omitempty"`
+type DefaultPartition struct {
+	OEM        *Partition `yaml:"oem,omitempty"`
+	State      *Partition `yaml:"state,omitempty"`
+	Recovery   *Partition `yaml:"recovery,omitempty"`
+	Persistent *Partition `yaml:"persistent,omitempty"`
 }
 
-type ElementalDefaultPartition struct {
-	OEM        *ElementalPartition `yaml:"oem,omitempty"`
-	State      *ElementalPartition `yaml:"state,omitempty"`
-	Recovery   *ElementalPartition `yaml:"recovery,omitempty"`
-	Persistent *ElementalPartition `yaml:"persistent,omitempty"`
-}
-
-type ElementalPartition struct {
+type Partition struct {
 	FilesystemLabel string `yaml:"label,omitempty"`
 	Size            uint   `yaml:"size,omitempty"`
 	FS              string `yaml:"fs,omitempty"`
 }
 
-func NewElementalConfig(path, configUrl, tty string) *ElementalConfig {
-	return &ElementalConfig{
-		Install: ElementalInstallSpec{
-			Target:    path,
-			CloudInit: configUrl,
-			TTY:       tty,
+func NewElementalConfig(path string, i config.Install) *ElementalConfig {
+	cfg := &ElementalConfig{
+		Install: InstallSpec{
+			Target: path,
 		},
-		Reboot:   true,
-		Poweroff: false,
+		Reboot:   i.Reboot,
+		Poweroff: i.PowerOff,
 	}
+
+	if i.ConfigURL != "" {
+		cfg.Install.CloudInit = i.ConfigURL
+	}
+
+	if i.TTY != "" {
+		cfg.Install.TTY = i.TTY
+	}
+
+	if i.SystemURI != "" {
+		cfg.Install.System = i.SystemURI
+	}
+
+	if i.ISOUrl != "" {
+		cfg.Install.ISO = i.ISOUrl
+	}
+
+	return cfg
 }
 
-func GenerateElementalConfig(cfg *LLMOSConfig, rootDisk *ghw.Disk) (*ElementalConfig, error) {
+func GenerateElementalConfig(cfg *config.LLMOSConfig, rootDisk *ghw.Disk) (*ElementalConfig, error) {
 	path, err := filepath.EvalSymlinks(cfg.Install.Device)
 	if err != nil {
 		return nil, err
 	}
-	elementalConfig := NewElementalConfig(path, cfg.Install.ConfigURL, cfg.Install.TTY)
+	elementalConfig := NewElementalConfig(path, cfg.Install)
 
 	//customize data partition layout
 	elementalConfig, err = CreateRootPartitioningLayout(cfg, elementalConfig, rootDisk)
@@ -80,7 +91,7 @@ func GenerateElementalConfig(cfg *LLMOSConfig, rootDisk *ghw.Disk) (*ElementalCo
 	return elementalConfig, nil
 }
 
-func CreateRootPartitioningLayout(cfg *LLMOSConfig, elementalConfig *ElementalConfig, rootDisk *ghw.Disk) (*ElementalConfig, error) {
+func CreateRootPartitioningLayout(cfg *config.LLMOSConfig, elementalConfig *ElementalConfig, rootDisk *ghw.Disk) (*ElementalConfig, error) {
 	var err error
 	cosPersistentSizeGiB := uint64(0)
 	if cfg.HasDataPartition() {
@@ -92,23 +103,23 @@ func CreateRootPartitioningLayout(cfg *LLMOSConfig, elementalConfig *ElementalCo
 		cosPersistentSizeGiB = cosPersistentSizeGiB << 10
 	}
 
-	elementalConfig.Install.Partitions = &ElementalDefaultPartition{
-		OEM: &ElementalPartition{
+	elementalConfig.Install.Partitions = &DefaultPartition{
+		OEM: &Partition{
 			FilesystemLabel: elconst.OEMLabel,
 			Size:            elconst.OEMSize,
 			FS:              elconst.LinuxFs,
 		},
-		State: &ElementalPartition{
+		State: &Partition{
 			FilesystemLabel: elconst.StateLabel,
 			Size:            constants.StateSize, // adding more size for air-gap images
 			FS:              elconst.LinuxFs,
 		},
-		Recovery: &ElementalPartition{
+		Recovery: &Partition{
 			FilesystemLabel: elconst.RecoveryLabel,
 			Size:            constants.RecoverySize, // ditto
 			FS:              elconst.LinuxFs,
 		},
-		Persistent: &ElementalPartition{
+		Persistent: &Partition{
 			FilesystemLabel: elconst.PersistentLabel,
 			Size:            uint(cosPersistentSizeGiB),
 			FS:              elconst.LinuxFs,
@@ -116,7 +127,7 @@ func CreateRootPartitioningLayout(cfg *LLMOSConfig, elementalConfig *ElementalCo
 	}
 
 	if cfg.HasDataPartition() {
-		elementalConfig.Install.ExtraPartitions = []ElementalPartition{
+		elementalConfig.Install.ExtraPartitions = []Partition{
 			{
 				FilesystemLabel: "LLMOS_DATA_PERSISTENT",
 				Size:            0,

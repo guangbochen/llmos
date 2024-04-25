@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 
-	"github.com/llmos-ai/llmos/pkg/config"
-	"github.com/llmos-ai/llmos/pkg/log"
+	"github.com/llmos-ai/llmos/pkg/elemental"
+	"github.com/llmos-ai/llmos/pkg/utils/log"
 )
 
 const (
@@ -40,13 +41,13 @@ func SaveTemp(obj interface{}, prefix string, logger log.Logger) (string, error)
 
 	logger.Info("Saved file successfully", "fileName", tempFile.Name())
 	if logger.IsDebug() {
-		fmt.Printf("config file:\n%v\n", string(bytes))
+		pterm.Info.Print(string(bytes))
 	}
 
 	return tempFile.Name(), nil
 }
 
-func SaveElementalConfig(elemental *config.ElementalConfig, logger log.Logger) (string, string, error) {
+func SaveElementalConfig(elemental *elemental.ElementalConfig, logger log.Logger) (string, string, error) {
 	err := os.MkdirAll(elementalConfigDir, os.ModePerm)
 	if err != nil {
 		return "", "", err
@@ -65,7 +66,7 @@ func SaveElementalConfig(elemental *config.ElementalConfig, logger log.Logger) (
 
 	logger.Info("Saved elemental config file successfully", "fileName", file)
 	if logger.IsDebug() {
-		fmt.Printf("config file:\n%v\n", string(bytes))
+		pterm.Info.Print(string(bytes))
 	}
 
 	return elementalConfigDir, file, nil
@@ -112,7 +113,7 @@ func IsValidPathOrURL(path string) error {
 	if strings.Contains(path, "http") {
 		url, err := url.Parse(path)
 		if err != nil {
-			slog.Debug("invalid source url: %s", path)
+			slog.Debug("invalid source url", "path", path)
 			return err
 		}
 

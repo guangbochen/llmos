@@ -26,11 +26,15 @@ type logger struct {
 	logLevel *slog.LevelVar
 }
 
-func NewLogger(ctx context.Context) Logger {
+func NewLogger(ctx context.Context, debug bool) Logger {
 	level := &slog.LevelVar{} // INFO
 	opts := &slog.HandlerOptions{
 		Level: level,
 	}
+	if debug {
+		level.Set(slog.LevelDebug)
+	}
+
 	l := slog.New(slog.NewTextHandler(os.Stdout, opts))
 	slog.SetDefault(l)
 	return &logger{
@@ -40,16 +44,16 @@ func NewLogger(ctx context.Context) Logger {
 	}
 }
 
-func (l *logger) Info(s string, i ...interface{}) {
-	l.Logger.InfoContext(l.ctx, s, i...)
+func (l *logger) Info(msg string, args ...interface{}) {
+	l.Logger.InfoContext(l.ctx, msg, args...)
 }
 
-func (l *logger) Debug(s string, i ...interface{}) {
-	l.Logger.DebugContext(l.ctx, s, i...)
+func (l *logger) Debug(msg string, args ...interface{}) {
+	l.Logger.DebugContext(l.ctx, msg, args...)
 }
 
-func (l *logger) Error(s string, i ...interface{}) {
-	l.Logger.ErrorContext(l.ctx, s, i...)
+func (l *logger) Error(msg string, args ...interface{}) {
+	l.Logger.ErrorContext(l.ctx, msg, args...)
 }
 
 func (l *logger) Fatal(msg string, args ...interface{}) {

@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/jaypipes/ghw"
@@ -17,12 +16,16 @@ const userPlaceHolder = "github:user1,github:user2"
 
 func (i *Installer) AskInstall() error {
 	if i.LLMOSConfig.Install.Silent {
-		i.logger.Debug("Running in silent mode")
+		i.logger.Error("Should running in silent mode")
 		return nil
 	}
 
 	pterm.Info.Println("Welcome to the LLMOS installer")
-	install := &config.Install{}
+	install, err := i.LLMOSConfig.Install.DeepCopy()
+	if err != nil {
+		return fmt.Errorf("failed to create a copy of the install config: %s", err.Error())
+	}
+
 	rootDisk, err := AskInstallDevice(install)
 	if err != nil {
 		if strings.Contains(err.Error(), invalidDeviceNameError) {
@@ -36,11 +39,15 @@ func (i *Installer) AskInstall() error {
 		return err
 	}
 
-	osCfg, err := AskUserConfigs(i.LLMOSConfig.OS)
+	osCpy, err := i.LLMOSConfig.OS.DeepCopy()
+	if err != nil {
+		return fmt.Errorf("failed to create a copy of the OS config: %s", err.Error())
+	}
+
+	osCfg, err := AskUserConfigs(osCpy)
 	if err != nil {
 		return err
 	}
-	i.LLMOSConfig.OS = *osCfg
 
 	allGood, err := questions.Prompt("Are settings ok?", "n", yesOrNo, true, false)
 	if err != nil {
@@ -51,51 +58,11 @@ func (i *Installer) AskInstall() error {
 		return i.AskInstall()
 	}
 
+	// update the config with the user input
 	i.LLMOSConfig.Install = *install
+	i.LLMOSConfig.OS = *osCfg
 
 	return i.GenerateInstallConfigs(rootDisk)
-}
-
-func (i *Installer) GenerateInstallConfigs(rootDisk *ghw.Disk) error {
-	cfs := configFiles{}
-	cosConfig, err := config.ConvertToCos(i.LLMOSConfig)
-	if err != nil {
-		return err
-	}
-
-	cosConfigFile, err := utils.SaveTemp(cosConfig, "cos", i.logger)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(cosConfigFile)
-
-	llmOSConfigFile, err := utils.SaveTemp(i.LLMOSConfig, "llmos", i.logger)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(llmOSConfigFile)
-
-	i.LLMOSConfig.Install.ConfigURL = cfs.cosConfigFile
-
-	// create a tmp config file for installation
-	elementalConfig, err := config.GenerateElementalConfig(i.LLMOSConfig, rootDisk)
-	if err != nil {
-		return err
-	}
-
-	elementalConfigDir, elementalConfigFile, err := utils.SaveElementalConfig(elementalConfig, i.logger)
-	if err != nil {
-		return err
-	}
-	i.LLMOSConfig.Install.ConfigDir = elementalConfigDir
-	defer os.Remove(elementalConfigFile)
-
-	i.cfs = cfs
-	if err = i.RunInstall(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // AskInstallDevice asks the user to choose the installation disk
@@ -188,7 +155,7 @@ func AskConfigURL(install *config.Install) error {
 }
 
 // AskUserConfigs asks the user to provide the user accounting configurations
-func AskUserConfigs(os config.LLMOS) (*config.LLMOS, error) {
+func AskUserConfigs(os *config.LLMOS) (*config.LLMOS, error) {
 	if len(os.SSHAuthorizedKeys) > 0 || os.Password != "" {
 		return nil, nil
 	}
@@ -217,7 +184,7 @@ func AskUserConfigs(os config.LLMOS) (*config.LLMOS, error) {
 	os.Password = passwd
 	os.SSHAuthorizedKeys = strings.Split(users, ",")
 
-	return &os, nil
+	return os, nil
 }
 
 func isYes(s string) bool {
@@ -226,21 +193,4 @@ func isYes(s string) bool {
 		return true
 	}
 	return false
-}
-
-func detectInstallationDevice() string {
-	var device string
-	maxSize := float64(0)
-
-	block, err := ghw.Block()
-	if err == nil {
-		for _, disk := range block.Disks {
-			size := float64(disk.SizeBytes) / float64(GiB)
-			if size > maxSize {
-				maxSize = size
-				device = "/dev/" + disk.Name
-			}
-		}
-	}
-	return device
 }

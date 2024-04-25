@@ -1,8 +1,6 @@
 module github.com/llmos-ai/llmos
 
-go 1.21.3
-
-toolchain go1.21.9
+go 1.21.9
 
 //replace github.com/guangbochen/golib v0.0.0-20240321041319-77dd475a3dff => ../golib
 
