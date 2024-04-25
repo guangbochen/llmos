@@ -35,7 +35,7 @@ func (i *Installer) AskInstall() error {
 		return err
 	}
 
-	if err = AskConfigURL(install); err != nil {
+	if err = AskConfigURL(install, i.LLMOSConfig); err != nil {
 		return err
 	}
 
@@ -49,7 +49,13 @@ func (i *Installer) AskInstall() error {
 		return err
 	}
 
-	allGood, err := questions.Prompt("Are settings ok?", "n", yesOrNo, true, false)
+	//cfgData, err := yaml.Marshal(i.LLMOSConfig)
+	//if err != nil {
+	//	return err
+	//}
+
+	confirmStr := fmt.Sprintf("Your disk will be formatted and LLMOS will be installed on %s with the below configuration:\n", install.Device)
+	allGood, err := questions.Prompt(confirmStr, "n", yesOrNo, true, false)
 	if err != nil {
 		return err
 	}
@@ -134,7 +140,7 @@ func AskDataDevice(install *config.Install, devices map[string]string, rootDevic
 }
 
 // AskConfigURL asks the user to provide the LLMOS config file location
-func AskConfigURL(install *config.Install) error {
+func AskConfigURL(install *config.Install, cfg *config.LLMOSConfig) error {
 	if install.ConfigURL != "" {
 		return nil
 	}
@@ -147,9 +153,12 @@ func AskConfigURL(install *config.Install) error {
 	install.ConfigURL = url
 
 	if install.ConfigURL != "" {
-		if err = utils.IsValidPathOrURL(install.ConfigURL); err != nil {
+		// If the user provided a URL, we need to parse and merge the config file
+		configData, err := utils.ReadLLMOSConfigFile(install.ConfigURL)
+		if err != nil {
 			return err
 		}
+		return cfg.Merge(configData)
 	}
 	return nil
 }
@@ -157,7 +166,7 @@ func AskConfigURL(install *config.Install) error {
 // AskUserConfigs asks the user to provide the user accounting configurations
 func AskUserConfigs(os *config.LLMOS) (*config.LLMOS, error) {
 	if len(os.SSHAuthorizedKeys) > 0 || os.Password != "" {
-		return nil, nil
+		return os, nil
 	}
 
 	username, err := questions.Prompt("User to setup:", defaultLoginUser, emptyPlaceHolder, false, false)

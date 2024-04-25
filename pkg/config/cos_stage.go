@@ -12,10 +12,11 @@ import (
 )
 
 const (
+	defaultUsername     = "llmos"
 	ntpdService         = "systemd-timesyncd"
 	timeWaitSyncService = "systemd-time-wait-sync"
 
-	K3sConfigFile   = "/etc/rancher/k3s/config.yaml"
+	K3sConfigDir    = "/etc/rancher/k3s/config.yaml.d"
 	K3sManifestPath = "/var/lib/rancher/k3s/server/manifests/"
 )
 
@@ -31,14 +32,14 @@ func (n Stage) String() string {
 	return string(n)
 }
 
-// ConvertToCos converts LLMOSConfig into the cOS configuration
-func ConvertToCos(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
+// ConvertToCosStages converts LLMOSConfig into the cOS stage configurations
+func ConvertToCosStages(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
 	cfg, err := cfg.DeepCopy()
 	if err != nil {
 		return nil, err
 	}
 
-	// Overwrite rootfs layout
+	// Overwrite the rootfs layout with custom partitions
 	rootfs := yipSchema.Stage{}
 	if err = overwriteRootfsStage(cfg, &rootfs); err != nil {
 		return nil, err
@@ -58,12 +59,16 @@ func ConvertToCos(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
 		return nil, err
 	}
 
+	// add llmos manifests
 	if err = addLLMOSManifests(cfg, &initramfs); err != nil {
 		return nil, err
 	}
 
 	// OS configs
 	username := cfg.OS.Username
+	if len(username) == 0 {
+		username = defaultUsername
+	}
 	initramfs.Users[username] = yipSchema.User{
 		PasswordHash: cfg.OS.Password,
 		Groups:       []string{"admin", "systemd-journal"},
@@ -71,12 +76,12 @@ func ConvertToCos(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
 		Homedir:      fmt.Sprintf("/home/%s", username),
 	}
 
-	// Use modprobe to load modules as a workaround solution
+	// Use modprobe to load modules as a workaround fix for elemental config
 	for _, module := range cfg.OS.Modules {
 		initramfs.Commands = append(initramfs.Commands, "modprobe "+module)
 	}
 
-	initramfs.Sysctl = cfg.OS.Sysctls
+	initramfs.Sysctl = cfg.OS.Sysctl
 	initramfs.Environment = cfg.OS.Environment
 
 	// append write_files
@@ -141,15 +146,23 @@ func overwriteRootfsStage(cfg *LLMOSConfig, stage *yipSchema.Stage) error {
 }
 
 func addInitK3sStage(cfg *LLMOSConfig, stage *yipSchema.Stage) error {
-	manifestConfig, err := Render("k3s-config.yaml", cfg)
+	k3sConfig, err := Render("k3s-config.yaml", cfg)
 	if err != nil {
 		return err
 	}
+	stage.Directories = append(stage.Directories,
+		yipSchema.Directory{
+			Path:        K3sConfigDir,
+			Permissions: 0600,
+			Owner:       0,
+			Group:       0,
+		})
+
 	stage.Files = append(stage.Files,
 		yipSchema.File{
-			Path:        K3sConfigFile,
-			Content:     manifestConfig,
-			Permissions: 0644,
+			Path:        K3sConfigDir + "/90_custom.yaml",
+			Content:     k3sConfig,
+			Permissions: 0600,
 			Owner:       0,
 			Group:       0,
 		},

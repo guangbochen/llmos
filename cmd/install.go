@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -60,6 +59,5 @@ func setupConfig(opts *InstallOptions) *config.LLMOSConfig {
 	cfg.Install.ConfigURL = opts.ConfigURL
 	cfg.Install.Silent = opts.Silent
 	cfg.Install.SystemURI = opts.Source
-	slog.Debug("setup default LLMOS config", "cfg", cfg)
 	return cfg
 }

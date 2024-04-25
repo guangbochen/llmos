@@ -2,17 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
 
+	"github.com/llmos-ai/llmos/pkg/config"
 	"github.com/llmos-ai/llmos/pkg/elemental"
 	"github.com/llmos-ai/llmos/pkg/utils/log"
 )
@@ -22,7 +24,7 @@ const (
 	elementalConfigFile = "config.yaml"
 )
 
-func SaveTemp(obj interface{}, prefix string, logger log.Logger) (string, error) {
+func SaveTemp(obj interface{}, prefix string, logger log.Logger, print bool) (string, error) {
 	tempFile, err := os.CreateTemp("/tmp", fmt.Sprintf("%s.", prefix))
 	if err != nil {
 		return "", err
@@ -40,7 +42,7 @@ func SaveTemp(obj interface{}, prefix string, logger log.Logger) (string, error)
 	}
 
 	logger.Info("Saved file successfully", "fileName", tempFile.Name())
-	if logger.IsDebug() {
+	if logger.IsDebug() || print {
 		pterm.Info.Print(string(bytes))
 	}
 
@@ -101,12 +103,17 @@ func IsRunningInContainer() bool {
 	return false
 }
 
-func IsValidPathOrURL(path string) error {
+func ReadLLMOSConfigFile(path string) (*config.LLMOSConfig, error) {
 	var err error
+	var data []byte
 
 	// check if is valid path
-	if _, err = os.Stat(path); err == nil {
-		return nil
+	_, err = os.Stat(path)
+	if err == nil {
+		data, err = GetLocalLLMOSConfig(path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// check if source is a valid url
@@ -114,24 +121,42 @@ func IsValidPathOrURL(path string) error {
 		url, err := url.Parse(path)
 		if err != nil {
 			slog.Debug("invalid source url", "path", path)
-			return err
+			return nil, err
 		}
-
-		client := http.Client{
-			Timeout: 1 * time.Second,
-		}
-		resp, err := client.Get(url.String())
+		data, err = GetURLLLMOSConfig(url.String())
 		if err != nil {
-			return err
+			return nil, fmt.Errorf("error reading LLMOS config file from url: %s", err.Error())
 		}
-		defer resp.Body.Close()
 
-		// Check if the HTTP response is a success (2xx) or success-like code (3xx)
-		if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusBadRequest {
-			return nil
-		}
-		return fmt.Errorf("url response status code is invalid: %d", resp.StatusCode)
 	}
 
-	return err
+	return config.LoadLLMOSConfig(data)
+}
+
+func GetLocalLLMOSConfig(path string) ([]byte, error) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading local LLMOS config file: %s", err.Error())
+	}
+	return bytes, nil
+}
+
+func GetURLLLMOSConfig(url string) ([]byte, error) {
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 5
+	resp, err := retryClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check if the HTTP response is a success (2xx) or success-like code (3xx)
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusBadRequest {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return body, nil
+	}
+	return nil, fmt.Errorf("url response status code is invalid: %d", resp.StatusCode)
 }

@@ -131,7 +131,7 @@ func CreateRootPartitioningLayout(cfg *config.LLMOSConfig, elementalConfig *Elem
 			{
 				FilesystemLabel: "LLMOS_DATA_PERSISTENT",
 				Size:            0,
-				FS:              "ext4",
+				FS:              elconst.LinuxFs,
 			},
 		}
 	}

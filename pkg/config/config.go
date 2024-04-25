@@ -5,36 +5,40 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
-type LLMOSConfig struct {
-	OS      LLMOS   `json:"os,omitempty" yaml:"os,omitempty"`
-	Install Install `json:"install,omitempty" yaml:"install,omitempty"`
+const defaultVersion = "v1.0"
 
-	ConfigDir string `json:"configDir,omitempty" yaml:"configDir,omitempty"`
-	Debug     bool   `json:"debug,omitempty" yaml:"debug,omitempty"`
-	DevMode   bool   `json:"devMode,omitempty" yaml:"devMode,omitempty"`
+type LLMOSConfig struct {
+	Version   string  `json:"version" yaml:"version"`
+	ConfigDir string  `json:"config-dir,omitempty" yaml:"config-dir,omitempty"`
+	Debug     bool    `json:"debug,omitempty" yaml:"debug,omitempty"`
+	DevMode   bool    `json:"dev-mode,omitempty" yaml:"dev-mode,omitempty"`
+	OS        LLMOS   `json:"os,omitempty" yaml:"os,omitempty"`
+	Install   Install `json:"install,omitempty" yaml:"install,omitempty"`
 }
 
 type LLMOS struct {
-	SSHAuthorizedKeys []string `json:"sshAuthorizedKeys,omitempty" yaml:"sshAuthorized,omitempty"`
-	WriteFiles        []File   `json:"writeFiles,omitempty" yaml:"writeFiles,omitempty"`
-	Hostname          string   `json:"hostname,omitempty" yaml:"hostname,omitempty"`
-	Runcmd            []string `json:"runCmd,omitempty" yaml:"runCmd,omitempty"`
-	Bootcmd           []string `json:"bootCmd,omitempty" yaml:"bootCmd,omitempty"`
-	Initcmd           []string `json:"initCmd,omitempty" yaml:"initCmd,omitempty"`
-	Env               []string `yaml:"env,omitempty" yaml:"env,omitempty"`
-
+	SSHAuthorizedKeys    []string          `json:"ssh-authorized-keys,omitempty" yaml:"ssh-authorized-keys,omitempty"`
+	WriteFiles           []File            `json:"write-files,omitempty" yaml:"write-files,omitempty"`
+	Hostname             string            `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+	Modules              []string          `json:"modules,omitempty" yaml:"modules,omitempty"`
+	Sysctl               map[string]string `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	Username             string            `json:"username,omitempty" yaml:"username,omitempty"`
 	Password             string            `json:"password,omitempty" yaml:"password,omitempty"`
-	ExternalIP           string            `json:"externalIP,omitempty" yaml:"externalIP,omitempty"`
-	Modules              []string          `json:"modules,omitempty" yaml:"modules,omitempty"`
-	Sysctls              map[string]string `json:"sysctls,omitempty" yaml:"sysctls,omitempty"`
-	NTPServers           []string          `json:"ntpServers,omitempty" yaml:"ntpServers,omitempty"`
-	DNSNameservers       []string          `json:"dnsNameservers,omitempty" yaml:"dnsNameservers,omitempty"`
+	NTPServers           []string          `json:"ntp-servers,omitempty" yaml:"ntp-servers,omitempty"`
+	DNSNameservers       []string          `json:"dns-nameservers,omitempty" yaml:"dns-nameservers,omitempty"`
 	Environment          map[string]string `json:"environment,omitempty" yaml:"environment,omitempty"`
 	Labels               map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
-	PersistentStatePaths []string          `json:"persistentStatePaths,omitempty" yaml:"persistentStatePaths,omitempty"`
+	PersistentStatePaths []string          `json:"persistent-state-paths,omitempty" yaml:"persistent-state-paths,omitempty"`
+	K3SConfig            `json:",inline,omitempty" yaml:",inline,omitempty"`
+}
+
+type K3SConfig struct {
+	Token          string   `json:"token,omitempty" yaml:"token,omitempty"`
+	NodeExternalIP string   `json:"node-external-ip,omitempty" yaml:"node-external-ip,omitempty"`
+	NodeLabel      []string `json:"node-label,omitempty" yaml:"node-label,omitempty"`
 }
 
 type File struct {
@@ -48,29 +52,27 @@ type File struct {
 type Install struct {
 	Device string `json:"device" yaml:"device" binding:"required"`
 	// +optional,
-	ConfigURL string `json:"configUrl,omitempty" yaml:"configUrl,omitempty"`
+	ConfigURL string `json:"config-url,omitempty" yaml:"config-url,omitempty"`
 	// +optional
 	Silent bool `json:"silent,omitempty" yaml:"silent,omitempty"`
 	// +optional
-	ISOUrl string `json:"isoUrl,omitempty" yaml:"isoUrl,omitempty"`
+	ISOUrl string `json:"iso,omitempty" yaml:"iso,omitempty"`
 	// +optional
-	SystemURI string `json:"systemUri,omitempty" yaml:"systemUri,omitempty"`
+	SystemURI string `json:"system-uri,omitempty" yaml:"system-uri,omitempty"`
 	// +optional
-	PowerOff bool `json:"powerOff,omitempty" yaml:"powerOff,omitempty"`
+	PowerOff bool `json:"poweroff,omitempty" yaml:"poweroff,omitempty"`
 	// +optional
 	Debug bool `json:"debug,omitempty" yaml:"debug,omitempty"`
 	// +optional
 	TTY string `json:"tty,omitempty" yaml:"tty,omitempty"`
 	// +optional
-	DataDevice string `json:"dataDevice,omitempty" yaml:"dataDevice,omitempty"`
+	DataDevice string `json:"data-device,omitempty" yaml:"data-device,omitempty"`
 	// +optional
 	Env []string `json:"env,omitempty" yaml:"env,omitempty"`
 	// +optional
 	Reboot bool `json:"reboot,omitempty" yaml:"reboot,omitempty"`
 	// +optional
-	EjectCD bool `json:"eject-cd,omitempty" yaml:"eject-cd,omitempty"`
-	// +optional
-	ConfigDir string `json:"configDir,omitempty" yaml:"configDir,omitempty"`
+	ConfigDir string `json:"config-dir,omitempty" yaml:"config-dir,omitempty"`
 }
 
 func NewLLMOSConfig() *LLMOSConfig {
@@ -78,6 +80,7 @@ func NewLLMOSConfig() *LLMOSConfig {
 	debug := viper.GetBool("debug")
 	devMode := viper.GetBool("dev")
 	return &LLMOSConfig{
+		Version:   defaultVersion,
 		ConfigDir: configDir,
 		Debug:     debug,
 		DevMode:   devMode,
@@ -122,19 +125,34 @@ func (c *LLMOSConfig) HasDataPartition() bool {
 	return true
 }
 
-func (c *LLMOSConfig) GetNodeLabels() map[string]string {
-	if c.OS.Labels == nil {
-		return map[string]string{}
+func (c *LLMOSConfig) GetK3sNodeLabels() []string {
+	if c.OS.NodeLabel == nil {
+		return []string{}
 	}
-	return c.OS.Labels
+	return c.OS.NodeLabel
 }
 
-func (c *LLMOSConfig) GetDisabledComponents() []string {
+func (c *LLMOSConfig) GetK3sDisabledComponents() []string {
 	return []string{
 		"cloud-controller",
 	}
 }
 
-func (c *LLMOSConfig) GetNodeExternalIP() string {
-	return c.OS.ExternalIP
+func (c *LLMOSConfig) GetK3sNodeExternalIP() string {
+	return c.OS.NodeExternalIP
+}
+
+func (c *LLMOSConfig) Merge(cfg *LLMOSConfig) error {
+	if err := mergo.Merge(c, cfg, mergo.WithAppendSlice); err != nil {
+		return err
+	}
+	return nil
+}
+
+func LoadLLMOSConfig(yamlBytes []byte) (*LLMOSConfig, error) {
+	cfg := NewLLMOSConfig()
+	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
+		return cfg, fmt.Errorf("failed to unmarshal yaml: %v", err)
+	}
+	return cfg, nil
 }

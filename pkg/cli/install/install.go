@@ -52,7 +52,6 @@ func NewInstaller(cfg *config.LLMOSConfig, logger log.Logger) *Installer {
 
 func (i *Installer) RunInstall(files []string) error {
 	cfg := i.LLMOSConfig
-	utils.SetEnv(cfg.OS.Env)
 	utils.SetEnv(cfg.Install.Env)
 
 	if cfg.Install.Device == "" || cfg.Install.Device == "auto" {
@@ -98,19 +97,19 @@ func (i *Installer) runInstall() error {
 
 func (i *Installer) GenerateInstallConfigs(rootDisk *ghw.Disk) error {
 	var files []string
-	cosConfig, err := config.ConvertToCos(i.LLMOSConfig)
+	cosConfig, err := config.ConvertToCosStages(i.LLMOSConfig)
 	if err != nil {
 		return err
 	}
 
-	cosConfigFile, err := utils.SaveTemp(cosConfig, "cos", i.logger)
+	cosConfigFile, err := utils.SaveTemp(cosConfig, "cos", i.logger, false)
 	if err != nil {
 		return err
 	}
 	defer os.Remove(cosConfigFile)
 	files = append(files, cosConfigFile)
 
-	llmOSConfigFile, err := utils.SaveTemp(i.LLMOSConfig, "llmos", i.logger)
+	llmOSConfigFile, err := utils.SaveTemp(i.LLMOSConfig, "llmos", i.logger, true)
 	if err != nil {
 		return err
 	}
