@@ -113,7 +113,7 @@ RUN chmod +x /usr/bin/ollama
 
 # Copy the ollama model
 RUN mkdir -p /var/lib/llmos/ollama
-#COPY --from=MODELS /dist/models /var/lib/llmos/ollama
+COPY --from=MODELS /dist/models /var/lib/llmos/ollama
 
 # Enable essential services
 RUN systemctl enable NetworkManager.service
@@ -156,7 +156,6 @@ RUN rm /var/lib/dbus/machine-id || true
 RUN rm /etc/hostname || true
 
 # Generate initrd with required elemental services
-#RUN elemental init immutable-rootfs,grub-config,grub-default-bootargs,elemental-setup,dracut-config --debug --force --config-dir /etc/llmos
 RUN elemental init immutable-rootfs,grub-config,grub-default-bootargs,elemental-setup,dracut-config --debug --force  && \
     kernel=$(ls /boot/Image-* | head -n1) && \
     if [ -e "$kernel" ]; then ln -sf "${kernel#/boot/}" /boot/vmlinuz; fi && \

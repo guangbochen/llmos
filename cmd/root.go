@@ -18,7 +18,6 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(
 		newInstallCmd(cmd, true),
 		newVersionCmd(cmd),
-		newUpgradeCmd(cmd, true),
 	)
 	cmd.SilenceUsage = true
 	cmd.InitDefaultHelpCmd()
