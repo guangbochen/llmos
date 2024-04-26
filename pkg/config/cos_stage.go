@@ -9,12 +9,15 @@ import (
 
 	yipSchema "github.com/mudler/yip/pkg/schema"
 	"gopkg.in/yaml.v1"
+
+	"github.com/llmos-ai/llmos/pkg/system"
 )
 
 const (
 	defaultUsername     = "llmos"
 	ntpdService         = "systemd-timesyncd"
 	timeWaitSyncService = "systemd-time-wait-sync"
+	llmosConfigFile     = "llmos-config.yaml"
 
 	K3sConfigDir    = "/etc/rancher/k3s/config.yaml.d"
 	K3sManifestPath = "/var/lib/rancher/k3s/server/manifests/"
@@ -23,9 +26,11 @@ const (
 type Stage string
 
 const (
-	RootfsStage    Stage = "rootfs"
-	InitramfsStage Stage = "initramfs"
-	NetworkStage   Stage = "network"
+	RootfsStage             Stage = "rootfs"
+	InitramfsStage          Stage = "initramfs"
+	NetworkStage            Stage = "network"
+	AfterInstallChrootStage Stage = "after-install-chroot"
+	AfterInstallStage       Stage = "after-install"
 )
 
 func (n Stage) String() string {
@@ -33,7 +38,7 @@ func (n Stage) String() string {
 }
 
 // ConvertToCosStages converts LLMOSConfig into the cOS stage configurations
-func ConvertToCosStages(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
+func ConvertToCosStages(cfg *LLMOSConfig, afterInstall yipSchema.Stage) (*yipSchema.YipConfig, error) {
 	cfg, err := cfg.DeepCopy()
 	if err != nil {
 		return nil, err
@@ -125,9 +130,10 @@ func ConvertToCosStages(cfg *LLMOSConfig) (*yipSchema.YipConfig, error) {
 	return &yipSchema.YipConfig{
 		Name: "LLMOS Installer Configuration",
 		Stages: map[string][]yipSchema.Stage{
-			RootfsStage.String():    {rootfs},
-			InitramfsStage.String(): {initramfs},
-			NetworkStage.String():   {afterNetwork},
+			RootfsStage.String():             {rootfs},
+			InitramfsStage.String():          {initramfs},
+			NetworkStage.String():            {afterNetwork},
+			AfterInstallChrootStage.String(): {afterInstall},
 		},
 	}, nil
 }
@@ -192,4 +198,40 @@ func addLLMOSManifests(cfg *LLMOSConfig, stage *yipSchema.Stage) error {
 		)
 	}
 	return nil
+}
+
+func AddStageAfterInstallChroot(llmosCfg string, cfg *LLMOSConfig) (*yipSchema.Stage, error) {
+	if llmosCfg == "" {
+		return nil, nil
+	}
+
+	targetPath := fmt.Sprintf("%s/%s", system.LocalConfigs, llmosConfigFile)
+	stage := &yipSchema.Stage{
+		Name: "Copy files after installation",
+		Directories: []yipSchema.Directory{
+			{
+				Path:        system.LocalConfigs,
+				Permissions: 0600,
+				Owner:       0,
+				Group:       0,
+			},
+		},
+	}
+
+	cfgStr, err := yaml.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal LLMOS config: %w", err)
+	}
+
+	stage.Files = append(stage.Files,
+		yipSchema.File{
+			Path:        targetPath,
+			Content:     string(cfgStr),
+			Permissions: 0600,
+			Owner:       0,
+			Group:       0,
+		},
+	)
+
+	return stage, nil
 }

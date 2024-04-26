@@ -3,6 +3,8 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/llmos-ai/llmos/pkg/system"
 )
 
 func NewRootCmd() *cobra.Command {
@@ -10,7 +12,7 @@ func NewRootCmd() *cobra.Command {
 		Use:   "llmos",
 		Short: "LLMOS CLI Management Tool",
 	}
-	cmd.PersistentFlags().String("config-dir", "", "Set config directory")
+	cmd.PersistentFlags().String("config-dir", system.LocalConfigs, "Set config directory")
 	cmd.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	cmd.PersistentFlags().Bool("dev", false, "Enable dev mode")
 	_ = viper.BindPFlag("config-dir", cmd.PersistentFlags().Lookup("config-dir"))
@@ -19,7 +21,6 @@ func NewRootCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		newInstallCmd(cmd, true),
-		newServeCmd(cmd),
 		newVersionCmd(cmd),
 		newUpgradeCmd(cmd, true),
 	)

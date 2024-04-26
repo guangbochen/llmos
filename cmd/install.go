@@ -40,7 +40,7 @@ func newInstallCmd(_ *cobra.Command, checkRoot bool) *cobra.Command {
 				if opts.ConfigURL == "" {
 					return fmt.Errorf("config-url is required in silent mode")
 				}
-				return newInstall.RunInstall(nil)
+				return newInstall.RunInstall()
 			}
 
 			return newInstall.AskInstall()

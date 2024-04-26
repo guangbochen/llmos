@@ -2,7 +2,14 @@ package config
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/imdario/mergo"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -50,29 +57,18 @@ type File struct {
 }
 
 type Install struct {
-	Device string `json:"device" yaml:"device" binding:"required"`
-	// +optional,
-	ConfigURL string `json:"config-url,omitempty" yaml:"config-url,omitempty"`
-	// +optional
-	Silent bool `json:"silent,omitempty" yaml:"silent,omitempty"`
-	// +optional
-	ISOUrl string `json:"iso,omitempty" yaml:"iso,omitempty"`
-	// +optional
-	SystemURI string `json:"system-uri,omitempty" yaml:"system-uri,omitempty"`
-	// +optional
-	PowerOff bool `json:"poweroff,omitempty" yaml:"poweroff,omitempty"`
-	// +optional
-	Debug bool `json:"debug,omitempty" yaml:"debug,omitempty"`
-	// +optional
-	TTY string `json:"tty,omitempty" yaml:"tty,omitempty"`
-	// +optional
-	DataDevice string `json:"data-device,omitempty" yaml:"data-device,omitempty"`
-	// +optional
-	Env []string `json:"env,omitempty" yaml:"env,omitempty"`
-	// +optional
-	Reboot bool `json:"reboot,omitempty" yaml:"reboot,omitempty"`
-	// +optional
-	ConfigDir string `json:"config-dir,omitempty" yaml:"config-dir,omitempty"`
+	Device     string   `json:"device" yaml:"device" binding:"required"`
+	Silent     bool     `json:"silent,omitempty" yaml:"silent,omitempty"`
+	ISOUrl     string   `json:"iso,omitempty" yaml:"iso,omitempty"`
+	SystemURI  string   `json:"system-uri,omitempty" yaml:"system-uri,omitempty"`
+	PowerOff   bool     `json:"poweroff,omitempty" yaml:"poweroff,omitempty"`
+	Debug      bool     `json:"debug,omitempty" yaml:"debug,omitempty"`
+	TTY        string   `json:"tty,omitempty" yaml:"tty,omitempty"`
+	DataDevice string   `json:"data-device,omitempty" yaml:"data-device,omitempty"`
+	Env        []string `json:"env,omitempty" yaml:"env,omitempty"`
+	Reboot     bool     `json:"reboot,omitempty" yaml:"reboot,omitempty"`
+	ConfigURL  string   `json:"config-url,omitempty" yaml:"config-url,omitempty"`
+	ConfigDir  string   `json:"config-dir,omitempty" yaml:"config-dir,omitempty"`
 }
 
 func NewLLMOSConfig() *LLMOSConfig {
@@ -155,4 +151,62 @@ func LoadLLMOSConfig(yamlBytes []byte) (*LLMOSConfig, error) {
 		return cfg, fmt.Errorf("failed to unmarshal yaml: %v", err)
 	}
 	return cfg, nil
+}
+
+func ReadLLMOSConfigFile(file string) (*LLMOSConfig, error) {
+	var err error
+	var data []byte
+
+	// check if is valid file
+	_, err = os.Stat(file)
+	if err == nil {
+		data, err = GetLocalLLMOSConfig(file)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// check if source is a valid url
+	if strings.Contains(file, "http") {
+		url, err := url.Parse(file)
+		if err != nil {
+			slog.Debug("invalid source url", "file", file)
+			return nil, err
+		}
+		data, err = GetURLLLMOSConfig(url.String())
+		if err != nil {
+			return nil, fmt.Errorf("error reading LLMOS config file from url: %s", err.Error())
+		}
+
+	}
+
+	return LoadLLMOSConfig(data)
+}
+
+func GetLocalLLMOSConfig(path string) ([]byte, error) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading local LLMOS config file: %s", err.Error())
+	}
+	return bytes, nil
+}
+
+func GetURLLLMOSConfig(url string) ([]byte, error) {
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = 5
+	resp, err := retryClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Check if the HTTP response is a success (2xx) or success-like code (3xx)
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusBadRequest {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return body, nil
+	}
+	return nil, fmt.Errorf("url response status code is invalid: %d", resp.StatusCode)
 }

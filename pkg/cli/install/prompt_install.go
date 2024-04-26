@@ -9,7 +9,6 @@ import (
 
 	"github.com/llmos-ai/llmos/pkg/config"
 	"github.com/llmos-ai/llmos/pkg/questions"
-	"github.com/llmos-ai/llmos/pkg/utils"
 )
 
 const userPlaceHolder = "github:user1,github:user2"
@@ -49,12 +48,7 @@ func (i *Installer) AskInstall() error {
 		return err
 	}
 
-	//cfgData, err := yaml.Marshal(i.LLMOSConfig)
-	//if err != nil {
-	//	return err
-	//}
-
-	confirmStr := fmt.Sprintf("Your disk will be formatted and LLMOS will be installed on %s with the below configuration:\n", install.Device)
+	confirmStr := fmt.Sprintf("Your disk will be formatted and LLMOS will be installed on %s:", install.Device)
 	allGood, err := questions.Prompt(confirmStr, "n", yesOrNo, true, false)
 	if err != nil {
 		return err
@@ -154,7 +148,7 @@ func AskConfigURL(install *config.Install, cfg *config.LLMOSConfig) error {
 
 	if install.ConfigURL != "" {
 		// If the user provided a URL, we need to parse and merge the config file
-		configData, err := utils.ReadLLMOSConfigFile(install.ConfigURL)
+		configData, err := config.ReadLLMOSConfigFile(install.ConfigURL)
 		if err != nil {
 			return err
 		}

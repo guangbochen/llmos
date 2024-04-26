@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-dmesg -n 5
+echo 5 > /proc/sys/kernel/printk

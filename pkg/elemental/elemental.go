@@ -10,7 +10,6 @@ import (
 
 type Elemental interface {
 	Install(config.Install) error
-	//Upgrade(config.Upgrade) error
 }
 
 type elemental struct{}
@@ -20,8 +19,7 @@ func NewElemental() Elemental {
 }
 
 func (r *elemental) Install(conf config.Install) error {
-	var installOpts []string
-
+	installOpts := []string{"elemental"}
 	if conf.Debug {
 		installOpts = append(installOpts, "--debug")
 	}

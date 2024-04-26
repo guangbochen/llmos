@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/jaypipes/ghw"
-	elcnst "github.com/rancher/elemental-toolkit/pkg/constants"
-
-	"github.com/llmos-ai/llmos/pkg/elemental"
-	"github.com/llmos-ai/llmos/pkg/utils/cmd"
-	"github.com/llmos-ai/llmos/pkg/utils/log"
 
 	"github.com/llmos-ai/llmos/pkg/config"
+	"github.com/llmos-ai/llmos/pkg/elemental"
 	"github.com/llmos-ai/llmos/pkg/utils"
+	"github.com/llmos-ai/llmos/pkg/utils/cmd"
+	"github.com/llmos-ai/llmos/pkg/utils/log"
 )
 
 const (
@@ -28,10 +27,8 @@ const (
 	emptyPlaceHolder = "Unset"
 	yesOrNo          = "[Y]es/[n]o"
 
-	//defaultLogFilePath     = "/var/log/llmos-install.log"
 	defaultLoginUser       = "llmos"
 	invalidDeviceNameError = "invalid device name"
-	oemTargetPath          = elcnst.OEMDir
 )
 
 type Installer struct {
@@ -50,7 +47,7 @@ func NewInstaller(cfg *config.LLMOSConfig, logger log.Logger) *Installer {
 	}
 }
 
-func (i *Installer) RunInstall(files []string) error {
+func (i *Installer) RunInstall() error {
 	cfg := i.LLMOSConfig
 	utils.SetEnv(cfg.Install.Env)
 
@@ -64,14 +61,6 @@ func (i *Installer) RunInstall(files []string) error {
 
 	if err := i.runInstall(); err != nil {
 		return err
-	}
-
-	// copy template file to the /oem config directory
-	// Note: don't use yaml file extension for the config files as it will be applied again
-	for _, f := range files {
-		if err := utils.CopyFile(f, fmt.Sprintf("%s/%s", oemTargetPath, f)); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -96,8 +85,23 @@ func (i *Installer) runInstall() error {
 }
 
 func (i *Installer) GenerateInstallConfigs(rootDisk *ghw.Disk) error {
-	var files []string
-	cosConfig, err := config.ConvertToCosStages(i.LLMOSConfig)
+	var configUrls []string
+
+	// add llmos config file
+	llmOSConfigFile, err := utils.SaveTemp(i.LLMOSConfig, "llmos", i.logger, true)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(llmOSConfigFile)
+
+	// add after install chroot files
+	afterInstallStage, err := config.AddStageAfterInstallChroot(llmOSConfigFile, i.LLMOSConfig)
+	if err != nil {
+		return err
+	}
+
+	// add cos config file
+	cosConfig, err := config.ConvertToCosStages(i.LLMOSConfig, *afterInstallStage)
 	if err != nil {
 		return err
 	}
@@ -107,18 +111,12 @@ func (i *Installer) GenerateInstallConfigs(rootDisk *ghw.Disk) error {
 		return err
 	}
 	defer os.Remove(cosConfigFile)
-	files = append(files, cosConfigFile)
+	configUrls = append(configUrls, cosConfigFile)
 
-	llmOSConfigFile, err := utils.SaveTemp(i.LLMOSConfig, "llmos", i.logger, true)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(llmOSConfigFile)
-	files = append(files, llmOSConfigFile)
+	// add the cosConfig file to the cloud-init config files of install
+	i.LLMOSConfig.Install.ConfigURL = strings.Join(configUrls[:], ",")
 
-	i.LLMOSConfig.Install.ConfigURL = cosConfigFile
-
-	// create a tmp config file for installation
+	// add elemental config dir and file
 	elementalConfig, err := elemental.GenerateElementalConfig(i.LLMOSConfig, rootDisk)
 	if err != nil {
 		return err
@@ -128,10 +126,12 @@ func (i *Installer) GenerateInstallConfigs(rootDisk *ghw.Disk) error {
 	if err != nil {
 		return err
 	}
-	i.LLMOSConfig.Install.ConfigDir = elementalConfigDir
 	defer os.Remove(elementalConfigFile)
 
-	if err = i.RunInstall(files); err != nil {
+	// specify the elemental install config-dir
+	i.LLMOSConfig.Install.ConfigDir = elementalConfigDir
+
+	if err = i.RunInstall(); err != nil {
 		return err
 	}
 
