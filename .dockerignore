@@ -2,3 +2,5 @@ dist/iso
 dist/cli
 build
 tmp
+bin
+cover.out
