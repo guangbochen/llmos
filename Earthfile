@@ -8,7 +8,7 @@ ARG --global ALPINE=3.19
 ARG --global ALPINE_DIND=earthly/dind:alpine-3.19
 ARG --global K3S_VERSION=v1.29.3+k3s1
 ARG --global OLLAMA_VERSION=0.1.32
-ARG --global ELEMENTAL_TOOLKIT=ghcr.io/rancher/elemental-toolkit/elemental-cli:v1.3.0
+ARG --global ELEMENTAL_TOOLKIT=ghcr.io/llmos-ai/elemental-toolkit:llmos-v1.3
 ARG --global REGISTRY=ghcr.io/llmos-ai
 ARG --global VERSION=main
 

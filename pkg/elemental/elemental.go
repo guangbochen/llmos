@@ -40,7 +40,7 @@ func (r *elemental) Install(conf config.Install) error {
 }
 
 func (r *elemental) Upgrade(cfg config.Upgrade) error {
-	var opts = []string{"--bootloader"}
+	var opts []string
 
 	if cfg.Debug {
 		opts = append(opts, "--debug")
@@ -51,7 +51,11 @@ func (r *elemental) Upgrade(cfg config.Upgrade) error {
 	}
 
 	if cfg.Source != "" {
-		opts = append(opts, "--system", cfg.Source)
+		if cfg.UpgradeRecovery {
+			opts = append(opts, "--recovery-system.uri", cfg.Source)
+		} else {
+			opts = append(opts, "--system.uri", cfg.Source)
+		}
 	}
 
 	cmd := exec.Command("elemental", "upgrade")

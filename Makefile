@@ -40,7 +40,7 @@ CLI_REPO?=$(REGISTRY)/llmos-cli
 MODELS_REPO=$(REGISTRY)/llmos-models
 
 ## Elemental configs
-ELEMENTAL_TOOLKIT?=ghcr.io/rancher/elemental-toolkit/elemental-cli:v1.3.0
+ELEMENTAL_TOOLKIT?=ghcr.io/llmos-ai/elemental-toolkit:llmos-v1.3
 
 ## ollama config
 OLLAMA_VERSION?=0.1.32
