@@ -141,6 +141,9 @@ RUN bash installer.sh agent
 RUN rm -rf installer.sh
 RUN chmod +x /usr/bin/k3s
 
+# Generate initrd with required elemental services
+RUN elemental init elemental-rootfs,elemental-sysroot,grub-config,grub-default-bootargs,elemental-setup,dracut-config,boot-assessment --debug --force
+
 # Update os-release file with some metadata
 RUN echo NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release && \
     echo VERSION=\"${VERSION}\"       >> /etc/os-release && \
@@ -151,17 +154,10 @@ RUN echo NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release && \
     echo TIMESTAMP="`date +'%Y%m%d%H%M%S'`" >> /etc/os-release && \
     echo GRUB_ENTRY_NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release
 
-RUN rm /etc/machine-id || true
-RUN rm /var/lib/dbus/machine-id || true
-RUN rm /etc/hostname || true
+#RUN rm /etc/machine-id || true
+#RUN rm /var/lib/dbus/machine-id || true
+#RUN rm /etc/hostname || true
 
-# Generate initrd with required elemental services
-RUN elemental init immutable-rootfs,grub-config,grub-default-bootargs,elemental-setup,dracut-config --debug --force  && \
-    kernel=$(ls /boot/Image-* | head -n1) && \
-    if [ -e "$kernel" ]; then ln -sf "${kernel#/boot/}" /boot/vmlinuz; fi && \
-    rm -rf /var/log/update* && \
-    >/var/log/lastlog && \
-    rm -rf /boot/vmlinux*
 
 # Good for validation after the build
 CMD /bin/bash

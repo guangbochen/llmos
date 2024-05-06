@@ -1,6 +1,8 @@
 module github.com/llmos-ai/llmos
 
-go 1.21.9
+go 1.22
+
+toolchain go1.22.2
 
 //replace github.com/guangbochen/golib v0.0.0-20240321041319-77dd475a3dff => ../golib
 
@@ -14,7 +16,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.30.0
 	github.com/pterm/pterm v0.12.79
-	github.com/rancher/elemental-toolkit v1.1.2
+	github.com/rancher/elemental-toolkit v1.3.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
@@ -88,6 +90,7 @@ require (
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

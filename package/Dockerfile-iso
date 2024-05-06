@@ -19,7 +19,7 @@ RUN elemental --debug --config-dir . build-iso \
     -o ${OUTPUT_DIR} -n ${ISO_PREFIX}  dir:/
 
 # Extract the squashfs image for PXE boot
-RUN xorriso -osirrox on -indev ${OUTPUT_DIR}/${ISO_PREFIX}.iso -extract /rootfs.squashfs ${OUTPUT_DIR}/${PROJECT_PREFIX}-rootfs-${ARCH}.squashfs
+#RUN xorriso -osirrox on -indev ${OUTPUT_DIR}/${ISO_PREFIX}.iso -extract /rootfs.squashfs ${OUTPUT_DIR}/${PROJECT_PREFIX}-rootfs-${ARCH}.squashfs
 
 
 FROM scratch as final
