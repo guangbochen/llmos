@@ -1,9 +1,6 @@
 name: "Branding"
 stages:
   initramfs:
-  - if: '[ ! -f /etc/hostname ]'
-    commands:
-      - sysctl kernel.hostname=llmos-${RANDOM}
   - name: "Branding"
     if: '[ -f "/run/elemental/live_mode" ]'
     files:

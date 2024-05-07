@@ -159,9 +159,9 @@ RUN echo NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release && \
 # Generate initrd with required elemental services
 RUN elemental init elemental-rootfs,elemental-sysroot,grub-config,grub-default-bootargs,elemental-setup,dracut-config,boot-assessment --debug --force
 
-#RUN rm /etc/machine-id || true
-#RUN rm /var/lib/dbus/machine-id || true
-#RUN rm /etc/hostname || true
+RUN rm /etc/machine-id || true
+RUN rm /var/lib/dbus/machine-id || true
+RUN rm /etc/hostname || true
 
 # Good for validation after the build
 CMD /bin/bash

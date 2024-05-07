@@ -3,7 +3,12 @@ stages:
   initramfs:
   - if: '[ ! -f "/run/elemental/recovery_mode" ]'
     commands:
-      - ln -sf /run/elemental/persistent/etc/hostname /etc/hostname
+      - |
+        if [ ! -e "/run/elemental/persistent/etc/hostname" ]; then
+          mkdir -p /run/elemental/persistent/etc
+          echo llmos-${RANDOM} > /run/elemental/persistent/etc/hostname
+        fi
+        ln -sf /run/elemental/persistent/etc/hostname /etc/hostname
   - if: '[ ! -f "/run/elemental/recovery_mode" ]'
     name: "Persist /etc/machine-id"
     commands:
