@@ -141,8 +141,10 @@ RUN bash installer.sh agent
 RUN rm -rf installer.sh
 RUN chmod +x /usr/bin/k3s
 
-# Generate initrd with required elemental services
-RUN elemental init elemental-rootfs,elemental-sysroot,grub-config,grub-default-bootargs,elemental-setup,dracut-config,boot-assessment --debug --force
+# Save some space
+RUN zypper clean --all && \
+    rm -rf /var/log/update* && \
+    >/var/log/lastlog
 
 # Update os-release file with some metadata
 RUN echo NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release && \
@@ -154,10 +156,12 @@ RUN echo NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release && \
     echo TIMESTAMP="`date +'%Y%m%d%H%M%S'`" >> /etc/os-release && \
     echo GRUB_ENTRY_NAME=\"LLMOS-${FLAVOR}\" >> /etc/os-release
 
+# Generate initrd with required elemental services
+RUN elemental init elemental-rootfs,elemental-sysroot,grub-config,grub-default-bootargs,elemental-setup,dracut-config,boot-assessment --debug --force
+
 #RUN rm /etc/machine-id || true
 #RUN rm /var/lib/dbus/machine-id || true
 #RUN rm /etc/hostname || true
-
 
 # Good for validation after the build
 CMD /bin/bash

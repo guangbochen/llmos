@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	osReleaseFile  = "/etc/os-release"
-	systemStopping = "stopping"
-	cosStaetFile   = "/run/initramfs/cos-state/state.yaml"
+	osReleaseFile      = "/etc/os-release"
+	systemStopping     = "stopping"
+	elementalStateFile = "/run/initramfs/elemental-state/state.yaml"
 
 	osImagePrefix    = "IMAGE="
 	osImageTagPrefix = "IMAGE_TAG="
@@ -88,7 +88,7 @@ func (u *Upgrade) Run() error {
 		return fmt.Errorf("failed to upgrade: %v", err)
 	}
 
-	return u.ns.Command("sleep 5 && reboot").Run()
+	return u.ns.Command("reboot").Run()
 }
 
 func (u *Upgrade) checkSystemStatus() (string, error) {
@@ -143,12 +143,12 @@ func (u *Upgrade) mountHostDirs() error {
 		}
 	}
 
-	stateFile, err := os.ReadFile(cosStaetFile)
+	stateFile, err := os.ReadFile(elementalStateFile)
 	if err != nil {
 		return fmt.Errorf("failed to read state config file: %v", err)
 	}
 	if u.logger.IsDebug() {
-		u.logger.Info("read state file:", "path", cosStaetFile)
+		u.logger.Info("read state file:", "path", elementalStateFile)
 		pterm.Info.Print(string(stateFile))
 	}
 	return nil
