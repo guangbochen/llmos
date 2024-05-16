@@ -17,13 +17,13 @@ WORKDIR /llmos
 build-airgap:
     ARG TARGETARCH # system arg
     FROM $ALPINE_DIND
-    RUN apk add --no-cache curl zstd bash envsubst
+    RUN apk add --no-cache curl zstd bash envsubst yq
     RUN echo "Downloading k3s version: ${K3S_VERSION}"
     COPY scripts  ./scripts
     WITH DOCKER
         RUN bash ./scripts/package-airgap
     END
-    #SAVE ARTIFACT dist/artifacts AS LOCAL dist/artifacts
+    SAVE ARTIFACT dist/artifacts AS LOCAL dist/artifacts
     SAVE IMAGE --cache-from ${REGISTRY}/llmos-airgap:${VERSION} --push ${REGISTRY}/llmos-airgap:${VERSION}
 
 build-models:
@@ -39,3 +39,16 @@ build-models:
     RUN ./scripts/pull-models
     #SAVE ARTIFACT dist/models AS LOCAL dist/models
     SAVE IMAGE --cache-from ${REGISTRY}/llmos-models:${VERSION} --push ${REGISTRY}/llmos-models:${VERSION}
+
+build-repo:
+    FROM alpine:$ALPINE
+    RUN apk add --no-cache nginx git helm yq jq bash
+    COPY scripts ./scripts
+    RUN ./scripts/package-charts
+    COPY dist/charts /usr/share/nginx/charts
+    RUN ls -l /usr/share/nginx/charts || true
+    RUN rm -rf dist/charts
+    EXPOSE 80
+    CMD ["nginx", "-g", "daemon off;"]
+    SAVE ARTIFACT /usr/share/nginx/charts AS LOCAL dist/charts
+    SAVE IMAGE --cache-from ${REGISTRY}/llmos-repo:${VERSION} --push ${REGISTRY}/llmos-repo:${VERSION}
