@@ -150,7 +150,7 @@ build-models: ## build the ollama models
 .PHONY: build-repo
 build-repo: ## build the charts repo
 	@echo Building charts repo
-	earthly -P -i +build-repo --REGISTRY=$(REGISTRY) --VERSION=$(VERSION) --GIT_REPO=$(GIT_REPO)
+	earthly -P +build-repo --REGISTRY=$(REGISTRY) --VERSION=$(VERSION) --GIT_REPO=$(GIT_REPO)
 
 .PHONY: build-iso-local
 build-iso-local: ## build LLMOS ISO locally
