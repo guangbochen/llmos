@@ -49,6 +49,10 @@ jobs:
         earthly --ci +build-models --REGISTRY=${{ env.REGISTRY }} --VERSION=${{ env.VERSION }}
       env:
         VERSION: ${{ steps.get_ref_name.outputs.ref_name }}
+    - name: build repo
+      run: make build-repo
+      env:
+        VERSION: ${{ steps.get_ref_name.outputs.ref_name }}
   validate-iso-release:
     needs: validate-cli
     runs-on: ubuntu-latest
@@ -75,10 +79,6 @@ jobs:
         fi
     - name: package airgap
       run: make package-airgap && ls -la dist/artifacts
-      env:
-        VERSION: ${{ steps.get_ref_name.outputs.ref_name }}
-    - name: build repo
-      run: make build-repo
       env:
         VERSION: ${{ steps.get_ref_name.outputs.ref_name }}
     - name: Build OS
