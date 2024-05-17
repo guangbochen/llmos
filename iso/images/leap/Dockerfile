@@ -114,10 +114,6 @@ RUN chmod +x /usr/bin/llmos
 # Add the elemental cli
 COPY --from=TOOLKIT /usr/bin/elemental /usr/bin/elemental
 
-# Add the ollama bin
-COPY dist/artifacts/ollama /usr/bin/ollama
-RUN chmod +x /usr/bin/ollama
-
 # Copy the ollama model
 RUN mkdir -p /var/lib/llmos/ollama
 COPY --from=MODELS /dist/models /var/lib/llmos/ollama

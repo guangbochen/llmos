@@ -41,14 +41,16 @@ build-models:
     SAVE IMAGE --cache-from ${REGISTRY}/llmos-models:${VERSION} --push ${REGISTRY}/llmos-models:${VERSION}
 
 build-repo:
-    FROM alpine:$ALPINE
-    RUN apk add --no-cache nginx git helm yq jq bash
+    FROM nginx:alpine$ALPINE
+    ARG GIT_REPO
+    ENV GIT_REPO=${GIT_REPO}
+    RUN apk update && apk add git helm yq jq bash
     COPY scripts ./scripts
     RUN ./scripts/package-charts
-    COPY dist/charts /usr/share/nginx/charts
+    RUN mv dist/charts /usr/share/nginx/html/charts
     RUN ls -l /usr/share/nginx/charts || true
-    RUN rm -rf dist/charts
+    RUN rm -rf /dist
     EXPOSE 80
     CMD ["nginx", "-g", "daemon off;"]
-    SAVE ARTIFACT /usr/share/nginx/charts AS LOCAL dist/charts
+    SAVE ARTIFACT /usr/share/nginx/html/charts AS LOCAL dist/charts
     SAVE IMAGE --cache-from ${REGISTRY}/llmos-repo:${VERSION} --push ${REGISTRY}/llmos-repo:${VERSION}

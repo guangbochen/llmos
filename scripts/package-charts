@@ -3,6 +3,7 @@ set -e -x
 
 TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." &> /dev/null && pwd )"
 SCRIPTS_DIR="${TOP_DIR}/scripts"
+GIT_REPO=${GIT_REPO:-llmos-ai}
 
 cd "${TOP_DIR}"
 
@@ -34,7 +35,7 @@ if [ -d "${llmos_path}" ]; then
     rm -rf ${llmos_path}
 fi
 
-git clone https://github.com/llmos-ai/llmos-controller.git --depth=1 ${llmos_path}
+git clone "https://github.com/${GIT_REPO}/llmos-controller.git" --depth=1 ${llmos_path}
 
 # package llmos-controller chart
 llmos_chart_path=${llmos_path}/deploy/charts/llmos-controller
@@ -43,8 +44,8 @@ llmos_crd_chart_path=${llmos_path}/deploy/charts/llmos-crd
 updateImagePullPolicy "${llmos_chart_path}"
 cd "${TOP_DIR}"
 
-helm package ${llmos_chart_path} -d ${charts_dir}
-helm package ${llmos_crd_chart_path} -d ${charts_dir}
+helm package ${llmos_chart_path} -d ${charts_dir} || true
+helm package ${llmos_crd_chart_path} -d ${charts_dir} || true
 
-helm repo index ${charts_dir}
+helm repo index ${charts_dir} || true
 rm -rf "${llmos_path}"

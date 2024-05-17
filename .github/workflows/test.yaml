@@ -77,6 +77,10 @@ jobs:
       run: make package-airgap && ls -la dist/artifacts
       env:
         VERSION: ${{ steps.get_ref_name.outputs.ref_name }}
+    - name: build repo
+      run: make build-repo
+      env:
+        VERSION: ${{ steps.get_ref_name.outputs.ref_name }}
     - name: Build OS
       run: make build-os
       env:

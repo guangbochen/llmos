@@ -59,7 +59,7 @@ help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 .PHONY: build
-build: build-cli build-airgap build-models build-airgap build-os build-iso ## build all components(cli, LLMOS image, iso)
+build: build-cli build-repo build-airgap build-models build-os build-iso ## build all components(cli, LLMOS image, iso)
 
 ##@ Build
 .PHONY: build-cli
@@ -150,7 +150,7 @@ build-models: ## build the ollama models
 .PHONY: build-repo
 build-repo: ## build the charts repo
 	@echo Building charts repo
-	earthly -P -i +build-repo --REGISTRY=$(REGISTRY) --VERSION=$(VERSION)
+	earthly -P -i +build-repo --REGISTRY=$(REGISTRY) --VERSION=$(VERSION) --GIT_REPO=$(GIT_REPO)
 
 .PHONY: build-iso-local
 build-iso-local: ## build LLMOS ISO locally

@@ -33,7 +33,6 @@ const (
 
 var manifestTemplates = []string{
 	"llmos-namespace.yaml",
-	"ollama-service.yaml",
 	"llmos-dashboard.yaml",
 	"llmos-repo.yaml",
 	"llmos-controller-charts.yaml",
@@ -265,7 +264,6 @@ func getLLMOSSysctlStages() (beforeNetwork yipSchema.Stage, afterNetwor yipSchem
 			},
 			Start: []string{
 				"k3s.service",
-				"ollama.service",
 				"change-console-log",
 			},
 		},

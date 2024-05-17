@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: repo
-        image: ghcr.io/llmos-ai/llmos-repo:latest
+        image: ghcr.io/llmos-ai/llmos-repo:main
         ports:
         - name: httpd
           containerPort: 80
