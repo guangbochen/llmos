@@ -33,9 +33,8 @@ const (
 
 var manifestTemplates = []string{
 	"llmos-namespace.yaml",
-	"llmos-dashboard.yaml",
 	"llmos-repo.yaml",
-	"llmos-controller-charts.yaml",
+	"llmos-operator-charts.yaml",
 }
 
 // ConvertToCosStages converts Config into the cOS stage configurations
@@ -88,9 +87,6 @@ func ConvertToCosStages(cfg *Config, afterInstall yipSchema.Stage) (*yipSchema.Y
 	}
 
 	// set sysctl and environment
-	initramfs.Sysctl = map[string]string{
-		"fs.aio-max-nr": "1048576",
-	}
 	for k, v := range cfg.OS.Sysctl {
 		initramfs.Sysctl[k] = v
 	}

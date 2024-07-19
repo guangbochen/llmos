@@ -140,7 +140,7 @@ package-airgap: ## packaging air-gap artifacts on local
 .PHONY: build-airgap ## dind is required for building air-gap image in CI
 build-airgap: ## building air-gap image using earthly
 	@echo "Building airgap artifacts"
-	earthly -P +build-airgap --REGISTRY=$(REGISTRY) --VERSION=$(VERSION)
+	earthly -i -P +build-airgap --REGISTRY=$(REGISTRY) --VERSION=$(VERSION)
 
 .PHONY: build-models
 build-models: ## build the ollama models
@@ -151,16 +151,6 @@ build-models: ## build the ollama models
 build-repo: ## build the charts repo
 	@echo Building charts repo
 	earthly -P +build-repo --REGISTRY=$(REGISTRY) --VERSION=$(VERSION) --GIT_REPO=$(GIT_REPO)
-
-.PHONY: build-iso-local
-build-iso-local: ## build LLMOS ISO locally
-	@echo Building $(ARCH) ISO
-	$(CONTAINER_TOOL) run --rm -v $(DOCKER_SOCK):$(DOCKER_SOCK) -v $(ROOT_DIR)/dist/iso/$(VERSION):/build \
-		-v $(ROOT_DIR)/iso/manifest.yaml:/manifest.yaml \
-		--entrypoint /usr/bin/elemental $(REPO):$(VERSION)-$(TARGETARCH) --debug build-iso \
-		--local --platform $(PLATFORM) --config-dir . \
-		-n "LLMOS-$(FLAVOR)-$(ARCH)" \
-		-o /build dir:/
 
 ## Location to install dependencies to
 LOCALBIN ?= $(shell pwd)/bin

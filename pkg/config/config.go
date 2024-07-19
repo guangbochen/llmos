@@ -128,6 +128,7 @@ func (c *Config) GetK3sNodeLabels() []string {
 func (c *Config) GetK3sDisabledComponents() []string {
 	return []string{
 		"cloud-controller",
+		"local-storage",
 	}
 }
 

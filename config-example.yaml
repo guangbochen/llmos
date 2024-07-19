@@ -39,3 +39,5 @@ os:
   node-label:
   - llmos.ai/gpu-type=a100
   - llmos.ai/region=region_x
+  persistent-state-paths:
+    - /var/lib/llmos

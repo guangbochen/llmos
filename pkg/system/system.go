@@ -13,7 +13,7 @@ const (
 	// ConfigFileDir represents where llmos configuration is located
 	ConfigFileDir = ConfigDir + "/config.d"
 	// ExtraDataDir represents where llmos extra data disk path is located
-	ExtraDataDir = "/var/lib/llmos-data"
+	ExtraDataDir = "/mnt/llmos"
 	// StateDir represents where cos ephemeral state is located
 	StateDir = "/run/elemental"
 )

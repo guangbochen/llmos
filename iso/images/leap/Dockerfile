@@ -19,11 +19,13 @@ ARG ARCH
 
 RUN zypper ar -G https://download.opensuse.org/repositories/utilities/15.5/utilities.repo || true && \
     zypper ar -G https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo || true && \
+    zypper ar -G 'https://download.nvidia.com/opensuse/leap/$releasever' NVIDIA || true && \
     zypper ref
+
 # The image should provide at least grub, systemd, dracut, a kernel and an initrd
 RUN ARCH=$(uname -m); \
     [[ "${ARCH}" == "aarch64" ]] && ARCH="arm64"; \
-    zypper --non-interactive install --no-recommends -- \
+    zypper --non-interactive install --no-recommends --auto-agree-with-licenses -- \
       kernel-default \
       device-mapper \
       dracut \
@@ -78,7 +80,9 @@ RUN ARCH=$(uname -m); \
       wget2 \
       xorriso \
       zstd \
-      nvidia-container-toolkit \
+      nvidia-video-G06 \
+      nvidia-utils-G06 \
+      nvidia-drivers-G06 \
       && zypper clean --all
 
 
@@ -150,9 +154,13 @@ RUN zypper clean --all && \
     >/var/log/lastlog
 
 # Update os-release file with some metadata
-RUN echo NAME=\"LLMOS-${LLMOS_FLAVOR}\" >> /etc/os-release && \
+RUN echo NAME=\"LLMOS-${LLMOS_FLAVOR}\" > /etc/os-release && \
     echo VERSION=\"${LLMOS_VERSION}\"       >> /etc/os-release && \
     echo ID=\"LLMOS-${LLMOS_FLAVOR}\"   >> /etc/os-release && \
+    echo ID_LIKE=\"LLMOS ${LLMOS_FLAVOR}\"  >> /etc/os-release && \
+    echo VERSION_ID=\"${LLMOS_VERSION}\"    >> /etc/os-release && \
+    echo PRETTY_NAME=\"LLMOS ${LLMOS_FLAVOR} ${LLMOS_VERSION}\"    >> /etc/os-release && \
+    echo ANSI_COLOR="0;32" && \
     echo IMAGE_REPO=\"https://github.com/llmos-ai/llmos\"       >> /etc/os-release && \
     echo IMAGE_TAG=\"${LLMOS_VERSION}\"     >> /etc/os-release && \
     echo IMAGE=\"${LLMOS_REPO}:${LLMOS_VERSION}\" >> /etc/os-release && \

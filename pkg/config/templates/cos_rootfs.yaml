@@ -2,7 +2,7 @@ if: '[ ! -f "/run/elemental/recovery_mode" ]'
 name: "Rootfs Layout overwrite"
 environment_file: /run/elemental/mount-layout.env
 environment:
-  VOLUMES: "LABEL=COS_OEM:/oem LABEL=COS_PERSISTENT:/usr/local{{ if .HasDataPartition }} LABEL=LLMOS_DATA_PERSISTENT:/var/lib/llmos-data{{ end }}"
+  VOLUMES: "LABEL=COS_OEM:/oem LABEL=COS_PERSISTENT:/usr/local{{ if .HasDataPartition }} LABEL=LLMOS_DATA_PERSISTENT:/mnt/llmos{{ end }}"
   OVERLAY: "tmpfs:25%"
   RW_PATHS: "/var /etc /srv"
   PERSISTENT_STATE_PATHS: >-
@@ -36,6 +36,7 @@ environment:
     /var/lib/llmos
     /var/lib/rancher
     /var/log
+    /mnt
     {{- if .OS.PersistentStatePaths }}
     {{- range $path := .OS.PersistentStatePaths }}
     {{ $path }}

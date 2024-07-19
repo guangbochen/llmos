@@ -19,15 +19,21 @@ func NewElemental() Elemental {
 	return &elemental{}
 }
 
-func (r *elemental) Install(conf config.Install) error {
+func (r *elemental) Install(install config.Install) error {
 	var installOpts []string
-	if conf.Debug {
+	if install.Debug {
 		installOpts = append(installOpts, "--debug")
 	}
 
-	if conf.ConfigDir != "" {
-		installOpts = append(installOpts, "--config-dir", conf.ConfigDir)
+	if install.ConfigDir != "" {
+		installOpts = append(installOpts, "--config-dir", install.ConfigDir)
 	}
+
+	if install.SystemURI != "" {
+		installOpts = append(installOpts, "--system.uri", install.SystemURI)
+	}
+
+	installOpts = append(installOpts, "--squash-no-compression")
 
 	cmd := exec.Command("elemental", "install")
 	cmd.Args = append(cmd.Args, installOpts...)

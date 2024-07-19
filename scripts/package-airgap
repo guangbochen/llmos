@@ -32,11 +32,5 @@ function download_tarballs() {
   echo "Created tarball"
 }
 
-function download_ollama() {
-  echo "Downloading ollama ${OLLAMA_VERSION} for ${TARGETARCH}"
-  curl -sfL https://ollama.com/download/ollama-linux-${TARGETARCH}?version=${OLLAMA_VERSION} -o dist/artifacts/ollama
-}
-
 package_images
 download_tarballs
-download_ollama
