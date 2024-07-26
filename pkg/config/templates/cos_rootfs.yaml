@@ -15,6 +15,7 @@ environment:
     /etc/ssh
     /etc/ssl/certs
     /etc/iscsi
+    /etc/ceph
     /etc/cni
     /etc/sysconfig
     /etc/systemd
@@ -27,14 +28,18 @@ environment:
     /usr/share/pki/trust
     /usr/share/pki/trust/anchors
     /var/lib/ca-certificates
+    /var/lib/calico
     /var/lib/cni
     /var/lib/containerd
     /var/lib/dbus
     /var/lib/extensions
+    /var/lib/juicefs
     /var/lib/kubelet
     /var/lib/NetworkManager
     /var/lib/llmos
     /var/lib/rancher
+    /var/lib/rook
+    /var/lib/selinux
     /var/log
     /mnt
     {{- if .OS.PersistentStatePaths }}
