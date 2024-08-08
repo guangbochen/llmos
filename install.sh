@@ -45,7 +45,7 @@ set -o noglob
 #     Directory to install systemd service and environment files to, or use
 #     /etc/systemd/system as the default
 #
-GITHUB_URL=https://github.com/llmos-ai/llmos/releases
+LLMOS_RELEASE_URL=https://github.com/llmos-ai/llmos/releases
 DOWNLOADER=
 
 # --- helper functions for logs ---
@@ -119,6 +119,8 @@ check_sudo() {
 # --- define needed environment variables ---
 setup_env() {
     SYSTEM_NAME=llmos
+
+    CMD_LLMOS_EXEC="$(quote_indent "$@")"
 
     # --- check for invalid characters in system name ---
     valid_chars=$(printf '%s' "${SYSTEM_NAME}" | sed -e 's/[][!#$%&()*;<=>?\_`{|}/[:space:]]/^/g;' )
@@ -222,7 +224,7 @@ setup_verify_os_arch() {
             fatal "Unsupported architecture $ARCH"
     esac
 
-    info "Detected OS-ARCH: $SUFFIX"
+    info "Detected OS:${OS_NAME} ARCH:${ARCH}"
 }
 
 # --- verify existence of network utility command ---
@@ -253,7 +255,7 @@ get_release_version() {
     if [ -n "${INSTALL_LLMOS_VERSION}" ]; then
 		VERSION_LLMOS=${INSTALL_LLMOS_VERSION}
     else
-		version_url="${GITHUB_URL}/latest"
+		version_url="${LLMOS_RELEASE_URL}/latest"
 		info "Finding release for LLMOS via ${version_url}"
 		if [ "$DOWNLOADER" = "curl" ]; then
 			VERSION_LLMOS=$(curl -Ls -o /dev/null -w %{url_effective} "${version_url}" | sed 's|.*/||')
@@ -267,7 +269,7 @@ get_release_version() {
 	if expr "$VERSION_LLMOS" : '^v' >/dev/null; then
 		info "Using ${VERSION_LLMOS} as release"
 	else
-		fatal "Invalid llmos version: ${VERSION_LLMOS} (does not start with 'v')"
+		fatal "Invalid llmos version: ${VERSION_LLMOS}"
 	fi
 }
 
@@ -293,7 +295,7 @@ download() {
 
 # --- download checksums file from github url ---
 download_checksums() {
-    CHECKSUM_URL=${GITHUB_URL}/download/${VERSION_LLMOS}/checksums.txt
+    CHECKSUM_URL=${LLMOS_RELEASE_URL}/download/${VERSION_LLMOS}/checksums.txt
     info "Downloading checksums file ${CHECKSUM_URL}"
     download "${TMP_HASH}" "${CHECKSUM_URL}"
     HASH_EXPECTED=$(grep " llmos${SUFFIX}$" "${TMP_HASH}" | awk '{print $1}')
@@ -315,7 +317,7 @@ installed_hash_matches() {
 
 # --- download binary from git ---
 download_binary() {
-    BIN_URL=${GITHUB_URL}/download/${VERSION_LLMOS}/llmos${SUFFIX}
+    BIN_URL=${LLMOS_RELEASE_URL}/download/${VERSION_LLMOS}/llmos${SUFFIX}
     info "Downloading binary ${BIN_URL}"
     download ${TMP_BIN} ${BIN_URL}
 }
@@ -411,7 +413,7 @@ LimitNPROC=infinity
 LimitCORE=infinity
 TasksMax=infinity
 TimeoutStartSec=0
-ExecStart=${BIN_DIR}/llmos bootstrap
+ExecStart=${BIN_DIR}/llmos bootstrap ${CMD_LLMOS_EXEC}
 EOF
 }
 
