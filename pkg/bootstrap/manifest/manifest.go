@@ -16,7 +16,6 @@ import (
 	llmosCfg "github.com/llmos-ai/llmos/pkg/bootstrap/config"
 	"github.com/llmos-ai/llmos/pkg/bootstrap/images"
 	"github.com/llmos-ai/llmos/pkg/bootstrap/kubectl"
-	"github.com/llmos-ai/llmos/pkg/bootstrap/version"
 )
 
 const (
@@ -36,16 +35,16 @@ func GetNodeName(config *llmosCfg.Config) (string, error) {
 }
 
 func ToBootstrapFile(config *llmosCfg.Config, path string, runtime llmosCfg.Runtime) (*applyinator.File, error) {
-	nodeName, err := GetNodeName(config)
-	if err != nil {
-		return nil, err
+	nodeName := config.NodeName
+	if nodeName == "" {
+		hostname, err := os.Hostname()
+		if err != nil {
+			return nil, fmt.Errorf("looking up hostname: %w", err)
+		}
+		nodeName = strings.Split(hostname, ".")[0]
 	}
 
-	_, err = version.K8sVersion(config.KubernetesVersion)
-	if err != nil {
-		return nil, err
-	}
-
+	var err error
 	token := config.Token
 	if token == "" {
 		token, err = randomtoken.Generate()
@@ -55,9 +54,6 @@ func ToBootstrapFile(config *llmosCfg.Config, path string, runtime llmosCfg.Runt
 	}
 
 	resources := config.Resources
-
-	resources = append(resources, llmosCfg.GenericMap{})
-
 	return ToFile(append(resources,
 		llmosCfg.GenericMap{
 			Data: map[string]interface{}{
@@ -67,6 +63,9 @@ func ToBootstrapFile(config *llmosCfg.Config, path string, runtime llmosCfg.Runt
 					"name": strings.ToLower(nodeName),
 					"labels": map[string]interface{}{
 						"llmos.ai/managed": "true",
+					},
+					"annotations:": map[string]interface{}{
+						"llmos.ai/bootstrap-version": config.LLMOSOperatorVersion,
 					},
 				},
 			},
