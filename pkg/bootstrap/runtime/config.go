@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/llmos-ai/llmos/utils/data/convert"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 
 	"github.com/llmos-ai/llmos/pkg/applyinator"
@@ -14,12 +15,13 @@ import (
 
 var (
 	normalizeNames = map[string]string{
-		"tlsSans":         "tls-san",
-		"nodeName":        "node-name",
-		"address":         "node-external-ip",
-		"internalAddress": "node-ip",
-		"taints":          "node-taint",
-		"labels":          "node-label",
+		"tlsSans":               "tls-san",
+		"nodeName":              "node-name",
+		"address":               "node-external-ip",
+		"internalAddress":       "node-ip",
+		"taints":                "node-taint",
+		"labels":                "node-label",
+		"systemDefaultRegistry": "system-default-registry",
 	}
 )
 
@@ -34,6 +36,7 @@ func ToTokenFile(token, dataDir string) (*applyinator.File, error) {
 
 func ToBootstrapFile(config *config.RuntimeConfig, runtime config.Runtime, server string) (*applyinator.File, error) {
 	data, err := ToConfig(config, server)
+	logrus.Debugf("bootstrap config: %s", string(data))
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +62,7 @@ func ToConfig(cfg *config.RuntimeConfig, server string) ([]byte, error) {
 
 		delete(mapData, "extraConfig")
 		delete(mapData, "role")
+		delete(mapData, "mirror")
 		for oldKey, newKey := range normalizeNames {
 			value, ok := mapData[oldKey]
 			if !ok {

@@ -42,7 +42,7 @@ func GetOperatorChartConfigPath(dataDir string) string {
 func ToFile(cfg *config.Config, dataDir string) (*applyinator.File, error) {
 	values := data.MergeMaps(defaultValues, map[string]interface{}{
 		"global": map[string]interface{}{
-			"imageRegistry": cfg.GlobalImageRegistry,
+			"imageRegistry": cfg.GlobalSystemImageRegistry,
 		},
 	})
 	values = data.MergeMaps(values, cfg.LLMOSOperatorValues)
@@ -76,12 +76,12 @@ func ToFile(cfg *config.Config, dataDir string) (*applyinator.File, error) {
 	}, nil
 }
 
-func ToInstruction(imageOverride, systemDefaultRegistry, k8sVersion,
+func ToInstruction(imageOverride, globalRegistry, k8sVersion,
 	operatorVersion string) (*applyinator.OneTimeInstruction, error) {
 	return &applyinator.OneTimeInstruction{
 		CommonInstruction: applyinator.CommonInstruction{
 			Name:  "install-llmos-operator",
-			Image: images.GetLLMOSInstallerImage(imageOverride, systemDefaultRegistry, operatorVersion),
+			Image: images.GetLLMOSInstallerImage(imageOverride, globalRegistry, operatorVersion),
 			Env:   kubectl.Env(k8sVersion),
 		},
 		SaveOutput: true,

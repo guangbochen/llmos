@@ -25,6 +25,7 @@ type Config struct {
 	ClusterInit       bool
 	Role              string
 	KubernetesVersion string
+	Mirror            string
 }
 
 // LLMOS is the main entrypoint to the llmos systemd service

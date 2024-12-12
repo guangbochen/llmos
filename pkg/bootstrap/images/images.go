@@ -8,33 +8,40 @@ import (
 )
 
 const (
-	defaultRuntimeImagePrefix = "rancher/system-agent-installer"
-	defaultSystemImagePrefix  = "llmosai/system-installer"
+	defaultRuntimeImagePrefix   = "rancher/system-agent-installer"
+	defaultInstallerImagePrefix = "llmos-ai/system-installer"
+	ghcrRegistry                = "ghcr.io"
 )
 
-func GetLLMOSInstallerImage(imageOverride, imagePrefix, operatorVersion string) string {
-	return getInstallerImage(imageOverride, imagePrefix, "llmos-operator", operatorVersion)
-}
-
-func GetRuntimeInstallerImage(imageOverride, imagePrefix, kubernetesVersion string) string {
-	if imagePrefix == "" {
-		imagePrefix = defaultRuntimeImagePrefix
+func GetLLMOSInstallerImage(imageOverride, registry, operatorVersion string) string {
+	if registry == "" {
+		registry = ghcrRegistry
 	}
-	return getInstallerImage(imageOverride, imagePrefix, string(config.GetRuntime(kubernetesVersion)), kubernetesVersion)
+	return getInstallerImage(imageOverride, registry, defaultInstallerImagePrefix, "llmos-operator", operatorVersion)
 }
 
-func getInstallerImage(imageOverride, imagePrefix, component, version string) string {
+func GetRuntimeInstallerImage(imageOverride, registry, kubernetesVersion string) string {
+	return getInstallerImage(imageOverride, registry, defaultRuntimeImagePrefix,
+		string(config.GetRuntime(kubernetesVersion)), kubernetesVersion)
+}
+
+func getInstallerImage(imageOverride, registry, imagePrefix, component, version string) string {
 	if imageOverride != "" {
 		return imageOverride
 	}
 
 	if imagePrefix == "" {
-		imagePrefix = defaultSystemImagePrefix
+		imagePrefix = defaultInstallerImagePrefix
 	}
 
 	tag := strings.ReplaceAll(version, "+", "-")
 	if tag == "" {
 		tag = "latest"
 	}
-	return fmt.Sprintf("%s-%s:%s", imagePrefix, component, tag)
+
+	if registry == "" {
+		return fmt.Sprintf("%s-%s:%s", imagePrefix, component, tag)
+	}
+
+	return fmt.Sprintf("%s/%s-%s:%s", registry, imagePrefix, component, tag)
 }

@@ -15,7 +15,12 @@ import (
 	"github.com/llmos-ai/llmos/pkg/bootstrap/config"
 )
 
+const (
+	defaultVolcMirrorRegistry = "llmos-ai-cn-beijing.cr.volces.com"
+)
+
 func mergeConfigs(cfg Config, result config.Config) config.Config {
+	// Merge basic configurations
 	if cfg.ClusterInit {
 		result.Role = config.ClusterInitRole
 	}
@@ -28,15 +33,22 @@ func mergeConfigs(cfg Config, result config.Config) config.Config {
 	if cfg.Role != "" {
 		result.Role = config.Role(cfg.Role)
 	}
-	if result.Role == "" && result.Server != "" && result.Token != "" {
-		result.Role = config.AgentRole
+	if cfg.Mirror != "" {
+		result.Mirror = cfg.Mirror
 	}
 
+	// Apply default values to the configuration
+	result.SetDefaults()
+
+	// Merge Kubernetes version
 	if result.KubernetesVersion == "" {
 		result.KubernetesVersion = cfg.KubernetesVersion
 	}
 
-	result.SetDefaults()
+	// Merge mirror configuration and apply default registry for CN region
+	if result.Mirror == config.MirrorRegionCN {
+		result.GlobalSystemImageRegistry = defaultVolcMirrorRegistry
+	}
 
 	return result
 }
@@ -58,6 +70,10 @@ func validateConfig(cfg *config.Config) error {
 
 	if cfg.Server != "" && cfg.Token == "" {
 		return fmt.Errorf("server URL is defined but token is not, skipping bootstrap")
+	}
+
+	if cfg.Mirror != "" && cfg.Mirror != config.MirrorRegionCN {
+		return fmt.Errorf("invalid mirror: %s, currently on %s is supported", cfg.Mirror, config.MirrorRegionCN)
 	}
 
 	return nil
