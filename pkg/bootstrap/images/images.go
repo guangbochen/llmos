@@ -10,13 +10,9 @@ import (
 const (
 	defaultRuntimeImagePrefix   = "rancher/system-agent-installer"
 	defaultInstallerImagePrefix = "llmos-ai/system-installer"
-	ghcrRegistry                = "ghcr.io"
 )
 
 func GetLLMOSInstallerImage(imageOverride, registry, operatorVersion string) string {
-	if registry == "" {
-		registry = ghcrRegistry
-	}
 	return getInstallerImage(imageOverride, registry, defaultInstallerImagePrefix, "llmos-operator", operatorVersion)
 }
 

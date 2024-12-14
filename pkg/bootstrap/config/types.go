@@ -57,12 +57,10 @@ type Config struct {
 
 	RuntimeInstallerImage string `json:"runtimeInstallerImage,omitempty"`
 	LLMOSInstallerImage   string `json:"llmosInstallerImage,omitempty"`
-	// GlobalSystemImageRegistry specify the registry used for LLMOS system images
-	GlobalSystemImageRegistry string `json:"globalSystemImageRegistry,omitempty"`
-	// SystemDefaultRegistry specify the registry used for k8s runtime images
-	SystemDefaultRegistry string               `json:"systemDefaultRegistry,omitempty"`
-	Registries            *registries.Registry `json:"registries,omitempty"`
-	ImageUtility          *image.Utility       `json:"imageUtility,omitempty"`
+	// GlobalSystemImageRegistry specify the default registry used for LLMOS system images
+	GlobalSystemImageRegistry string               `json:"globalSystemImageRegistry,omitempty"`
+	Registries                *registries.Registry `json:"registries,omitempty"`
+	ImageUtility              *image.Utility       `json:"imageUtility,omitempty"`
 }
 
 func paths() (result []string) {

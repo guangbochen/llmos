@@ -22,7 +22,7 @@ const (
 func ToInstruction(cfg *config.Config, k8sVersion string) (*applyinator.OneTimeInstruction, error) {
 	runtime := config.GetRuntime(k8sVersion)
 	env := addRuntimeEnvConfig(runtime, cfg, k8sVersion)
-	logrus.Debugf("runtime %s instruction envs: %+v", runtime, env)
+	logrus.Debugf("added runtime %s instruction envs: %+v", runtime, env)
 
 	return &applyinator.OneTimeInstruction{
 		CommonInstruction: applyinator.CommonInstruction{

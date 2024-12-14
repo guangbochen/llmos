@@ -103,7 +103,6 @@ func (l *LLMOS) execute(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("generating plan: %w", err)
 	}
-	logrus.Debugf("Generated node plan: %+v", nodePlan)
 
 	if err = plan.Run(ctx, &cfg, nodePlan, l.cfg.DataDir); err != nil {
 		return fmt.Errorf("running plan error: %w", err)

@@ -21,6 +21,8 @@ import (
 const (
 	helmAPIVersion     = "helm.cattle.io/v1"
 	helmConfigKindName = "HelmChartConfig"
+
+	defaultVolcMirrorRegistry = "llmos-ai-cn-beijing.cr.volces.com"
 )
 
 var defaultValues = map[string]interface{}{
@@ -40,6 +42,9 @@ func GetOperatorChartConfigPath(dataDir string) string {
 }
 
 func ToFile(cfg *config.Config, dataDir string) (*applyinator.File, error) {
+	if cfg.Mirror != "" && cfg.GlobalSystemImageRegistry == "" {
+		cfg.GlobalSystemImageRegistry = defaultVolcMirrorRegistry
+	}
 	values := data.MergeMaps(defaultValues, map[string]interface{}{
 		"global": map[string]interface{}{
 			"imageRegistry": cfg.GlobalSystemImageRegistry,

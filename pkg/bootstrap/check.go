@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	defaultVolcMirrorRegistry = "llmos-ai-cn-beijing.cr.volces.com"
+	MirrorRegionCN           = "cn"
+	aliSystemDefaultRegistry = "registry.cn-hangzhou.aliyuncs.com"
 )
 
 func mergeConfigs(cfg Config, result config.Config) config.Config {
@@ -45,9 +46,9 @@ func mergeConfigs(cfg Config, result config.Config) config.Config {
 		result.KubernetesVersion = cfg.KubernetesVersion
 	}
 
-	// Merge mirror configuration and apply default registry for CN region
-	if result.Mirror == config.MirrorRegionCN {
-		result.GlobalSystemImageRegistry = defaultVolcMirrorRegistry
+	// Set runtime system default registry to mirror registry
+	if result.SystemDefaultRegistry == "" && result.Mirror == MirrorRegionCN {
+		result.SystemDefaultRegistry = aliSystemDefaultRegistry
 	}
 
 	return result
@@ -72,8 +73,8 @@ func validateConfig(cfg *config.Config) error {
 		return fmt.Errorf("server URL is defined but token is not, skipping bootstrap")
 	}
 
-	if cfg.Mirror != "" && cfg.Mirror != config.MirrorRegionCN {
-		return fmt.Errorf("invalid mirror: %s, currently on %s is supported", cfg.Mirror, config.MirrorRegionCN)
+	if cfg.Mirror != "" && cfg.Mirror != MirrorRegionCN {
+		return fmt.Errorf("invalid mirror %s, only [%s] is supported for now", cfg.Mirror, MirrorRegionCN)
 	}
 
 	return nil

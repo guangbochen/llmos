@@ -6,9 +6,6 @@ import (
 
 const (
 	EtcdExposeMetrics = "etcd-expose-metrics"
-
-	MirrorRegionCN           = "cn"
-	aliSystemDefaultRegistry = "registry.cn-hangzhou.aliyuncs.com"
 )
 
 var (
@@ -24,19 +21,21 @@ var (
 type Runtime string
 type Role string
 
+// RuntimeConfig contains the basic configuration for the k8s runtime
 type RuntimeConfig struct {
-	Role                  Role                   `json:"role,omitempty"`
-	Server                string                 `json:"server,omitempty"`
-	SANS                  []string               `json:"tlsSans,omitempty"`
-	NodeName              string                 `json:"nodeName,omitempty"`
-	Address               string                 `json:"address,omitempty"`
-	InternalAddress       string                 `json:"internalAddress,omitempty"`
-	Taints                []string               `json:"taints,omitempty"`
-	Labels                []string               `json:"labels,omitempty"`
-	Token                 string                 `json:"token,omitempty"`
-	SystemDefaultRegistry string                 `json:"systemDefaultRegistry,omitempty"`
-	Mirror                string                 `json:"mirror,omitempty"`
-	ConfigValues          map[string]interface{} `json:"extraConfig,omitempty"`
+	Role            Role                   `json:"role,omitempty"`
+	Server          string                 `json:"server,omitempty"`
+	SANS            []string               `json:"tlsSans,omitempty"`
+	NodeName        string                 `json:"nodeName,omitempty"`
+	Address         string                 `json:"address,omitempty"`
+	InternalAddress string                 `json:"internalAddress,omitempty"`
+	Taints          []string               `json:"taints,omitempty"`
+	Labels          []string               `json:"labels,omitempty"`
+	Token           string                 `json:"token,omitempty"`
+	ConfigValues    map[string]interface{} `json:"extraConfig,omitempty"`
+	// SystemDefaultRegistry specify the mirror registry used for k8s runtime images
+	SystemDefaultRegistry string `json:"systemDefaultRegistry,omitempty"`
+	Mirror                string `json:"mirror,omitempty"`
 }
 
 func (cfg *RuntimeConfig) SetDefaults() {
@@ -58,11 +57,6 @@ func (cfg *RuntimeConfig) SetDefaults() {
 	// Determine default role if not explicitly set
 	if cfg.Role == "" && cfg.Server != "" && cfg.Token != "" {
 		cfg.Role = AgentRole
-	}
-
-	// Set default system registry if mirror is set to use cn region
-	if cfg.SystemDefaultRegistry == "" && cfg.Mirror == MirrorRegionCN {
-		cfg.SystemDefaultRegistry = aliSystemDefaultRegistry
 	}
 }
 
